@@ -1,0 +1,71 @@
+# ==============================================================================
+# z_10_wasta-core.gschema.override
+#
+#   If same key overridden in 2 files, "last wins" regarding filenames
+#       (so a "z_10_*" filename would win over a "10_*" filename)
+#       wasta-core uses "z_10_*" filenames, regional customizations
+#       use "z_20_*" filenames.
+#
+#   After modifying these .override files, reload with:
+#       glib-compile-schemas /usr/share/glib-2.0/schemas/
+#
+#   2017-11-29 rik: initial bionic settings
+#   2018-02-28 rik: adjusting slick-greeter values
+#   2019-01-08 rik: adding Wasta customized Gnome settings (wasta-core gives
+#       default Ubuntu experience)
+#   2019-08-20 rik: setting gnome-terminal theme to 'dark'
+#
+# ==============================================================================
+
+# arc-darker '#30343A' ==> background-color = '#30343A'
+# ambiance dark gray color: '#3C3C3C' ==> background-color = '#3C3C3C'
+
+[org.gnome.desktop.background]
+show-desktop-icons = true
+picture-uri = '/usr/share/wasta-core/resources/clarity_by_sigi_sagi.jpg'
+
+[org.gnome.desktop.interface]
+clock-format = '12h'
+clock-show-date = true
+cursor-theme = 'DMZ-White'
+font-name = 'Ubuntu 11'
+gtk-theme = 'Arc-Darker'
+icon-theme = 'wasta-vertex-ubuntu'
+monospace-font-name = 'Ubuntu Mono 12'
+
+[org.gnome.desktop.lockdown]
+disable-user-switching = true
+
+[org.gnome.desktop.media-handling]
+automount = true
+automount-open = false
+
+[org.gnome.desktop.privacy]
+remember-recent-files = true
+
+[org.gnome.desktop.screensaver]
+lock-enabled = false
+picture-uri = '/usr/share/wasta-core/resources/clarity_by_sigi_sagi.jpg'
+ubuntu-lock-on-suspend = false
+
+[org.gnome.desktop.wm.preferences]
+theme = 'Arc-Darker'
+titlebar-font = 'Ubuntu Bold 11'
+
+[org.gnome.shell]
+favorite-apps = ['firefox.desktop', 'org.gnome.Nautilus.desktop', 'libreoffice-writer.desktop', 'wasta-backup.desktop', 'wasta-resources.desktop']
+
+[org.gnome.Terminal.Legacy.Settings]
+theme-variant = 'dark'
+
+[x.dm.slick-greeter]
+background = ''
+background-color = '#30343A'
+draw-grid = true
+draw-user-backgrounds = true
+font-name = 'Ubuntu 11'
+icon-theme-name = 'wasta-vertex-ubuntu'
+logo = '/usr/share/wasta-multidesktop/resources/wasta-linux.png'
+other-monitors-logo = '/usr/share/icons/hicolor/128x128/apps/wasta-linux.png'
+play-ready-sound = ''
+theme-name = 'Arc-Darker'

@@ -1,0 +1,19 @@
+Source: wasta-multidesktop-focal
+Section: utils
+Priority: optional
+Maintainer: Rik Shaw <rikshaw76@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 4.4.0
+Homepage: https://github.com/wasta-linux/wasta-multidesktop-focal
+
+Package: wasta-multidesktop-focal
+Architecture: all
+Depends: arc-theme, at, jq, rename, slick-greeter, wasta-core-focal, wasta-papirus, wasta-resources, wmctrl, ${shlibs:Depends}, ${misc:Depends}
+Recommends: arc-solid-theme, wasta-vertex-ubuntu
+Conflicts: gdm3
+Description: Wasta-Linux MultiDesktop
+ Ensures cross-desktop compatibility between different desktop sessions.
+ A lightdm script is executed on login to make necessary adjustments based
+ on detected session in comparison to previously detected session.
+ .
+ Currently only GNOME, Cinnamon, and XFCE are supported.
