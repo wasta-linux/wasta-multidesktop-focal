@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (0.1.2) focal; urgency=medium
+
+  * adding 20.04 theming
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Fri, 13 Dec 2019 10:29:13 +0300
+
 wasta-multidesktop-focal (0.1.1) focal; urgency=medium
 
   * initial focal release
