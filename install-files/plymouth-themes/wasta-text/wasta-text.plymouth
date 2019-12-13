@@ -1,10 +1,10 @@
 [Plymouth Theme]
-Name=Wasta Text
+Name=Wasta-Text
 Description=Text mode theme based on wasta-logo theme
-ModuleName=ubuntu-text
+ModuleName=wasta-text
 
-[ubuntu-text]
-title=Wasta-Linux 18.04
+[wasta-text]
+title=wasta [Linux]
 black=0x30333b
 white=0xffffff
 brown=0xff4012
