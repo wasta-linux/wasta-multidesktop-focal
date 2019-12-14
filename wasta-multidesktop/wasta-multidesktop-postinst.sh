@@ -89,7 +89,7 @@ fi
 
 WASTA_PLY_TEXT=$(cat /etc/alternatives/text.plymouth | \
     grep title=Wasta-Linux || true;)
-# if variable is still "", then need to set text.plymouth
+# if variable is not Wasta-Linux, then need to set text.plymouth
 if [ -z "$WASTA_PLY_TEXT" ];
 then
     echo
@@ -108,7 +108,7 @@ then
     update-initramfs -u
 else
     echo
-    echo "*** Plymouth TEXT Theme already set to wasta-text.  No update needed."
+    echo "*** Plymouth TEXT Theme already set to wasta-text. No update needed."
     echo
 fi
 
