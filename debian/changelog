@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (0.1.5) focal; urgency=medium
+
+  * wasta logo rebranding
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Fri, 27 Dec 2019 15:03:25 +0300
+
 wasta-multidesktop-focal (0.1.4) focal; urgency=medium
 
   * background image had been shifted, correcting
