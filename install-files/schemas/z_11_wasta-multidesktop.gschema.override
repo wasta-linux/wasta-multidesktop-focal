@@ -23,7 +23,7 @@
 
 [org.gnome.desktop.background]
 show-desktop-icons = true
-picture-uri = '/usr/share/wasta-multidesktop/resources/daniel-von-appen-wasta-text.jpg'
+picture-uri = 'file:///usr/share/backgrounds/wasta/moren-hsu-unsplash-wasta-logos.jpg'
 
 [org.gnome.desktop.interface]
 clock-format = '12h'
@@ -31,7 +31,7 @@ clock-show-date = true
 cursor-theme = 'DMZ-White'
 font-name = 'Ubuntu 11'
 gtk-theme = 'Arc-Darker'
-icon-theme = 'wasta-vertex-ubuntu'
+icon-theme = 'ePapirus'
 monospace-font-name = 'Ubuntu Mono 12'
 
 [org.gnome.desktop.lockdown]
@@ -46,7 +46,7 @@ remember-recent-files = true
 
 [org.gnome.desktop.screensaver]
 lock-enabled = false
-picture-uri = '/usr/share/wasta-multidesktop/resources/daniel-von-appen-wasta-text.jpg'
+picture-uri = 'file:///usr/share/backgrounds/wasta/moren-hsu-unsplash-wasta-logos.jpg'
 ubuntu-lock-on-suspend = false
 
 [org.gnome.desktop.wm.preferences]
@@ -65,7 +65,7 @@ background-color = '#30343A'
 draw-grid = true
 draw-user-backgrounds = true
 font-name = 'Ubuntu 11'
-icon-theme-name = 'wasta-vertex-ubuntu'
+icon-theme-name = 'ePapirus'
 logo = '/usr/share/wasta-multidesktop/resources/wasta-linux.png'
 other-monitors-logo = '/usr/share/icons/hicolor/128x128/apps/wasta-linux.png'
 play-ready-sound = ''

@@ -72,6 +72,8 @@
 # 2019-08-23 rik: cinnamon system settings: rename ibus to "IBus Keyboards" and
 #   add "Keyman Keyboards"
 #   - replicate arc-themes adjustments to arc-solid themes
+# 2020-01-24 rik: re-enable wasta-ibus script (it now stops and restarts ibus
+#   if it is active.
 #
 # ==============================================================================
 
@@ -1054,19 +1056,19 @@ then
     #rik: no trailing space after HardwareSettings so remove and re-add
     #     otherwise additional added categories will have an error
     desktop-file-edit --remove-category=HardwareSettings \
-        /usr/share/applications/software-properties-drivers.desktop
+        /usr/share/applications/software-properties-drivers.desktop > /dev/null 2>&1 || true;
 
     desktop-file-edit --add-category=HardwareSettings \
-        /usr/share/applications/software-properties-drivers.desktop
+        /usr/share/applications/software-properties-drivers.desktop > /dev/null 2>&1 || true;
 
     desktop-file-edit --add-category=Settings \
-        /usr/share/applications/software-properties-drivers.desktop
+        /usr/share/applications/software-properties-drivers.desktop > /dev/null 2>&1 || true;
 
     desktop-file-edit --add-category=X-XFCE-SettingsDialog \
-        /usr/share/applications/software-properties-drivers.desktop
+        /usr/share/applications/software-properties-drivers.desktop > /dev/null 2>&1 || true;
 
     desktop-file-edit --add-category=X-XFCE-HardwareSettings \
-        /usr/share/applications/software-properties-drivers.desktop
+        /usr/share/applications/software-properties-drivers.desktop > /dev/null 2>&1 || true;
 fi
 
 # ------------------------------------------------------------------------------
@@ -1274,16 +1276,21 @@ fi
 # ------------------------------------------------------------------------------
 # wasta-ibus
 # ------------------------------------------------------------------------------
-# 2019-01-08 rik: disabling for now since have been some issues with ibus
-#   user settings getting corrupted.
-#if [ -e /usr/share/wasta-ibus ];
-#then
-#    # Ensure xkb keyboards in ibus keyboard list
-#    echo
-#    echo "*** Calling ibus-xkb-adjustments.sh script"
-#    echo
-#    bash /usr/share/wasta-ibus/scripts/ibus-xkb-adjustments.sh
-#fi
+if [ -e /usr/share/wasta-ibus ];
+then
+    # Ensure wasta xkb keyboards in ibus keyboard list
+    IBUS_CONFIG=/usr/share/ibus/component/simple.xml
+    WASTA_IBUS=$(grep 'wasta' $IBUS_CONFIG 2>&1 || true;)
+    if [ -z "$WASTA_IBUS" ];
+    then
+        # NOTE: script will stop and re-start ibus-daemon if active
+        #   This is needed because ibus settings were getting corrupted otherwise
+        echo
+        echo "*** Calling ibus-xkb-adjustments.sh script"
+        echo
+        bash /usr/share/wasta-ibus/scripts/ibus-xkb-adjustments.sh
+    fi
+fi
 
 # ------------------------------------------------------------------------------
 # web2py

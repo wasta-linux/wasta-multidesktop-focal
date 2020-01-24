@@ -1,3 +1,11 @@
+wasta-multidesktop-focal (0.1.7) focal; urgency=medium
+
+  * wasta-login: re-implement ibus patching
+  * debian/control: add wasta-backgrounds
+  * schema.overrides: adjust default backgrounds
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Fri, 24 Jan 2020 13:27:20 +0300
+
 wasta-multidesktop-focal (0.1.6) focal; urgency=medium
 
   * wasta logo minor adjustments

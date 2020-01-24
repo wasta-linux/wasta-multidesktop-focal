@@ -8,8 +8,8 @@ Homepage: https://github.com/wasta-linux/wasta-multidesktop-focal
 
 Package: wasta-multidesktop-focal
 Architecture: all
-Depends: arc-theme, at, jq, rename, slick-greeter, wasta-core-focal, wasta-papirus, wasta-resources, wmctrl, ${shlibs:Depends}, ${misc:Depends}
-Recommends: arc-solid-theme, wasta-vertex-ubuntu
+Depends: arc-theme, at, jq, papirus-icon-theme, rename, slick-greeter, wasta-backgrounds, wasta-core-focal, wasta-resources, wmctrl, ${shlibs:Depends}, ${misc:Depends}
+Recommends: arc-solid-theme, wasta-papirus, wasta-vertex-ubuntu
 Conflicts: gdm3
 Description: Wasta-Linux MultiDesktop
  Ensures cross-desktop compatibility between different desktop sessions.
