@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (0.1.10) focal; urgency=medium
+
+  * version bump for build
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Fri, 24 Jan 2020 15:31:12 +0300
+
 wasta-multidesktop-focal (0.1.9) focal; urgency=medium
 
   * plymouth text: revert to use ubuntu-text module
