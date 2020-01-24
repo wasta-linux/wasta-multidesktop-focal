@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (0.1.8) focal; urgency=medium
+
+  * app-adjustments.sh: correct "---" to "--"
+  * cleanup images
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Fri, 24 Jan 2020 14:36:46 +0300
+
 wasta-multidesktop-focal (0.1.7) focal; urgency=medium
 
   * wasta-login: re-implement ibus patching

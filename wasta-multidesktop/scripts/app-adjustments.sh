@@ -249,7 +249,7 @@ fi
 # Add to "Accessories" category (by removing from X-GNOME-Utilities)
 if [ -e /usr/share/applications/org.gnome.baobab.desktop ];
 then
-    desktop-file-edit ---remove-category=X-GNOME-Utilities \
+    desktop-file-edit --remove-category=X-GNOME-Utilities \
         /usr/share/applications/org.gnome.baobab.desktop
 fi
 
@@ -734,7 +734,7 @@ fi
 # Add to "Accessories" category (by removing from X-GNOME-Utilities)
 #if [ -e /usr/share/applications/org.gnome.Screenshot.desktop ];
 #then
-#    desktop-file-edit ---remove-category=X-GNOME-Utilities \
+#    desktop-file-edit --remove-category=X-GNOME-Utilities \
 #        /usr/share/applications/org.gnome.Screenshot.desktop
 #fi
 
@@ -811,10 +811,10 @@ fi
 # remove from 'science and education' to reduce number of categories
 if [ -e /usr/share/applications/libreoffice-math.desktop ];
 then
-    desktop-file-edit ---remove-category=Science \
+    desktop-file-edit --remove-category=Science \
         /usr/share/applications/libreoffice-math.desktop
 
-    desktop-file-edit ---remove-category=Education \
+    desktop-file-edit --remove-category=Education \
         /usr/share/applications/libreoffice-math.desktop
 fi
 
