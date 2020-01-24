@@ -1,9 +1,9 @@
 [Plymouth Theme]
 Name=Wasta-Text
 Description=Text mode theme based on wasta-logo theme
-ModuleName=wasta-text
+ModuleName=ubuntu-text
 
-[wasta-text]
+[ubuntu-text]
 title=Wasta-Linux
 black=0x30333b
 white=0xffffff
