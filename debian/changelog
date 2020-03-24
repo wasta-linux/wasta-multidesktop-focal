@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (0.1.11) focal; urgency=medium
+
+  * reworked logos with better scalability
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 24 Mar 2020 20:43:27 +0300
+
 wasta-multidesktop-focal (0.1.10) focal; urgency=medium
 
   * version bump for build
