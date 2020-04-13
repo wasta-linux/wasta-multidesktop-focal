@@ -23,7 +23,7 @@
 
 [org.gnome.desktop.background]
 show-desktop-icons = true
-picture-uri = 'file:///usr/share/backgrounds/wasta/moren-hsu-unsplash-wasta-logos.jpg'
+picture-uri = 'file:///usr/share/backgrounds/wasta/fabien-bazanegue-unsplash-wasta.jpg'
 
 [org.gnome.desktop.interface]
 clock-format = '12h'
@@ -46,7 +46,7 @@ remember-recent-files = true
 
 [org.gnome.desktop.screensaver]
 lock-enabled = false
-picture-uri = 'file:///usr/share/backgrounds/wasta/moren-hsu-unsplash-wasta-logos.jpg'
+picture-uri = 'file:///usr/share/backgrounds/wasta/fabien-bazanegue-unsplash-wasta.jpg'
 ubuntu-lock-on-suspend = false
 
 [org.gnome.desktop.wm.preferences]
@@ -67,6 +67,6 @@ draw-user-backgrounds = true
 font-name = 'Ubuntu 11'
 icon-theme-name = 'ePapirus'
 logo = '/usr/share/wasta-multidesktop/resources/wasta-linux.png'
-other-monitors-logo = '/usr/share/icons/hicolor/128x128/apps/wasta-linux.png'
+other-monitors-logo = '/usr/share/icons/hicolor/scalable/apps/wasta-linux.svg'
 play-ready-sound = ''
 theme-name = 'Arc-Darker'

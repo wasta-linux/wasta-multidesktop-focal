@@ -548,6 +548,20 @@ then
 fi
 
 # ------------------------------------------------------------------------------
+# gnome-packagekit
+# ------------------------------------------------------------------------------
+if [ -e /usr/share/applications/org.gnome.Packages.desktop ];
+then
+    # Add "Software" to name
+    desktop-file-edit --set-name="PackageKit Software Manager" \
+        /usr/share/applications/org.gnome.Packages.desktop
+
+    # Add 
+    desktop-file-edit --set-comment="Add or remove programs installed on the system" \
+        /usr/share/applications/org.gnome.Packages.desktop
+fi
+
+# ------------------------------------------------------------------------------
 # goldendict
 # ------------------------------------------------------------------------------
 if [ -x /usr/bin/goldendict ];
@@ -622,7 +636,7 @@ then
         /usr/share/applications/goldendict.desktop
 
     # 18.04: goldendict (qt5) plus cinnamon plus app indicator will not show
-    # the tray icon.  Need to add dbus-launch to the launcher and then it will
+    # the tray icon. Need to add dbus-launch to the launcher and then it will
     # show.  See: https://github.com/linuxmint/Cinnamon/issues/6143
     sed -i -e 's@^Exec=goldendict@Exec=dbus-launch goldendict@' \
         /usr/share/applications/goldendict.desktop
@@ -1106,6 +1120,21 @@ then
 
     desktop-file-edit --add-category=X-XFCE-SystemSettings \
         /usr/share/applications/software-properties-gtk.desktop
+fi
+
+# ------------------------------------------------------------------------------
+# synaptic
+# ------------------------------------------------------------------------------
+# For 20.04, Arc-Darker theme gives big black box and bad icon contrast
+#   so am defaulting to Adwaita theme
+# TODO: can't get pkexec to change theme.
+if [ -e /usr/share/applications/synaptic.desktop ];
+then
+#    sed -i -e 's@^Exec=synaptic-pkexec@Exec=env GTK_THEME=Adwaita synaptic-pkexec@' \
+#        /usr/share/applications/goldendict.desktop
+#    GTK_THEME=Adwaita synaptic
+    desktop-file-edit --set-name="Synaptic Software Package Manager" \
+        /usr/share/applications/synaptic.desktop
 fi
 
 # ------------------------------------------------------------------------------
