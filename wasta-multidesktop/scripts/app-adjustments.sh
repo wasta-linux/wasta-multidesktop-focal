@@ -556,7 +556,7 @@ then
     desktop-file-edit --set-name="PackageKit Software Manager" \
         /usr/share/applications/org.gnome.Packages.desktop
 
-    # Add 
+    # Add "programs" to the comment
     desktop-file-edit --set-comment="Add or remove programs installed on the system" \
         /usr/share/applications/org.gnome.Packages.desktop
 fi
