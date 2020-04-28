@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (0.9.1) focal; urgency=medium
+
+  * app-adjustsments.sh: re-working wasta gtk theme xfce tweaks
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Mon, 27 Apr 2020 20:01:49 -0500
+
 wasta-multidesktop-focal (0.9.0) focal; urgency=medium
 
   * minor cleanup, version bump to 0.9.0

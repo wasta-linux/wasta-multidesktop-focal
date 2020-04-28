@@ -147,16 +147,25 @@ then
         /usr/share/themes/Arc-Dark/gtk-2.0/gtkrc \
         /usr/share/themes/Arc-Darker/gtk-2.0/gtkrc
 
-    # add whiskermenu compatibility (Arc-Darker and Arc-Dark only)
-    # first delete:
-    sed -i -e '\@gtk-whiskermenu-wasta@d' \
-        /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
-        /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+    # add xfce compatibility (Arc-Darker and Arc-Dark only)
+    WASTA_GTK_FILE="/usr/share/wasta-xfce/resources/gtk-xfce-wasta.css"
+    if [ -e "$WASTA_GTK_FILE" ];
+    then
+        # first delete (legacy cleanup):
+        sed -i -e '\@gtk-whiskermenu-wasta@d' \
+            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
 
-    # then add:
-    sed -i -e "$ a @import url(\"$DIR/resources/gtk-whiskermenu-wasta.css\");" \
-        /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
-        /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+        # first delete:
+        sed -i -e '\@gtk-xfce-wasta@d' \
+            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+
+        # then add:
+        sed -i -e "$ a @import url(\"$WASTA_GTK_FILE\");" \
+            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+    fi
 
     # make Arc themes compatible with xfce4-windowck-plugin (not sure why
     #   the .svg is not recognized by the code, but adding the .png solves it)
