@@ -73,6 +73,7 @@
 #       desktop icons
 #   2019-03-17 rik: add xubuntu to xfce session check
 #       - ensure gnome NOT drawing desktop even if Nautilus not installed
+#   2020-04-28 rik: initial cleanup for focal and xfce
 #
 # ==============================================================================
 
@@ -119,12 +120,17 @@ then
     echo "current user: $CURR_USER" | tee -a $LOGFILE
     echo "current session: $CURR_SESSION" | tee -a $LOGFILE
     echo "PREV session for user: $PREV_SESSION" | tee -a $LOGFILE
+
     if [ -x /usr/bin/nemo ];
     then
         echo "TOP NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
     fi
-    echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-    echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+
+    if [ -x /usr/bin/nautilus ];
+    then
+        echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+        echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+    fi
 fi
 
 if ! [ $CURR_USER ];
@@ -195,7 +201,7 @@ then
 
     #xfce: NO "file://" preceding filename
     XFCE_BG=$(xmlstarlet sel -T -t -m \
-        '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitor0"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
+        '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
         -v . -n $XFCE_DESKTOP)
     # not wanting to use xfconf-query because it starts xfconfd which then makes
     # it difficult to change user settings.
@@ -205,11 +211,15 @@ fi
 # Ensure all .config files owned by user
 chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.config/
 
-#gnome: "file://" precedes filename
-#2018-12-18 rik: urldecode necessary for gnome IF picture-uri set in gnome AND
-#   unicode characters present
-GNOME_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.gnome.desktop.background picture-uri" || true;)
-GNOME_BG=$(urldecode $GNOME_BG_URL)
+if [ -x /usr/bin/gnome-shell ];
+then
+    #gnome: "file://" precedes filename
+    #2018-12-18 rik: urldecode necessary for gnome IF picture-uri set in gnome AND
+    #   unicode characters present
+
+    GNOME_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.gnome.desktop.background picture-uri" || true;)
+    GNOME_BG=$(urldecode $GNOME_BG_URL)
+fi
 
 AS_FILE="/var/lib/AccountsService/users/$CURR_USER"
 # Lightdm 1.26 uses a more standardized syntax for storing user backgrounds.
@@ -237,8 +247,12 @@ then
     then
         echo "xfce bg: $XFCE_BG" | tee -a $LOGFILE
     fi
-    echo "gnome bg url encoded: $GNOME_BG_URL" | tee -a $LOGFILE
-    echo "gnome bg url decoded: $GNOME_BG" | tee -a $LOGFILE
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        echo "gnome bg url encoded: $GNOME_BG_URL" | tee -a $LOGFILE
+        echo "gnome bg url decoded: $GNOME_BG" | tee -a $LOGFILE
+    fi
+
     echo "as bg: $AS_BG" | tee -a $LOGFILE
 fi
 
@@ -255,7 +269,10 @@ echo "$DIR/scripts/app-adjustments.sh $*" | at now || true;
 
 # USER level fixes:
 # Ensure Nautilus not showing hidden files (power users may be annoyed)
-su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.nautilus.preferences show-hidden-files false' || true;
+if [ -x /usr/bin/nautilus ];
+then
+    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.nautilus.preferences show-hidden-files false' || true;
+fi
 
 if [ -x /usr/bin/nemo ];
 then
@@ -274,22 +291,6 @@ then
     # Ensure Nemo sidebar set to 'places'
     su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.window-state side-pane-view 'places'" || true;
 
-    # make sure Nemo autostart disabled (we start it ourselves)
-    # if [ -e /etc/xdg/autostart/nemo-autostart.desktop ]
-    # then
-    #     desktop-file-edit --set-key=NoDisplay --set-value=true \
-    #         /usr/share/applications/nemo-autostart.desktop || true;
-    # fi
-    # stop nemo if running (we'll start later)
-#    if [ "$(pidof nemo-desktop)" ];
-#    then
-#        if [ $DEBUG ];
-#        then
-#            echo "nemo-desktop is running: $(pidof nemo-desktop)" | tee -a $LOGFILE
-#        fi
-#       ****18.04: commenting out to see if necessary - nemo-desktop now manages the desktop
-#       killall nemo-desktop | tee -a $LOGFILE
-#    fi
 fi
 
 # copy in zim prefs if don't already exist (these make trayicon work OOTB)
@@ -299,19 +300,20 @@ then
         /home/$CURR_USER/.config/zim"
 fi
 
+# 20.04 not needed?????
 # skypeforlinux: if autostart exists patch it to launch as indicator
 #   (this fixes icon size in xfce and fixes menu options for all desktops)
 #   (needs to be run every time because skypeforlinux re-writes this launcher
 #    every time it is started)
 #   https://askubuntu.com/questions/1033599/how-to-remove-skypes-double-icon-in-ubuntu-18-04-mate-tray
-if [ -e /home/$CURR_USER/.config/autostart/skypeforlinux.desktop ];
-then
+#if [ -e /home/$CURR_USER/.config/autostart/skypeforlinux.desktop ];
+#then
     # appindicator compatibility + manual minimize (xfce can't mimimize as
     # the "insides" of the window are minimized and don't exist but the
     # empty window frame remains behind: so close Skype window after 10 seconds)
-    desktop-file-edit --set-key=Exec --set-value='sh -c "env XDG_CURRENT_DESKTOP=Unity /usr/bin/skypeforlinux %U && sleep 10 && wmctrl -c Skype"' \
-        /home/$CURR_USER/.config/autostart/skypeforlinux.desktop
-fi
+#    desktop-file-edit --set-key=Exec --set-value='sh -c "env XDG_CURRENT_DESKTOP=Unity /usr/bin/skypeforlinux %U && sleep 10 && wmctrl -c Skype"' \
+#        /home/$CURR_USER/.config/autostart/skypeforlinux.desktop
+#fi
 
 # --------------------------------------------------------------------------
 # SYNC to PREV_SESSION (mainly for background picture)
@@ -325,8 +327,11 @@ cinnamon)
         echo "Previous Session Cinnamon: Sync to other DEs" | tee -a $LOGFILE
     fi
 
-    # sync Cinnamon background to GNOME background
-    su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri $CINNAMON_BG" || true;
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        # sync Cinnamon background to GNOME background
+        su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri $CINNAMON_BG" || true;
+    fi
 
     if [ -x /usr/bin/xfce4-session ];
     then
@@ -341,7 +346,7 @@ cinnamon)
         fi
         #su "$CURR_USER" -c "dbus-launch xfce4-set-wallpaper $NEW_XFCE_BG" || true;
         xmlstarlet ed --inplace -u \
-            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitor0"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
+            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
             -v "$NEW_XFCE_BG" $XFCE_DESKTOP
         #set ALL properties with name "last-image" to use value of new background
         sed -i -e 's@\(name="last-image"\).*@\1 type="string" value="'"$NEW_XFCE_BG"'"/>@' \
@@ -382,7 +387,7 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz)
         fi
         #su "$CURR_USER" -c "dbus-launch xfce4-set-wallpaper $NEW_XFCE_BG" || true;
         xmlstarlet ed --inplace -u \
-            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitor0"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
+            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
             -v "$NEW_XFCE_BG" $XFCE_DESKTOP
         #set ALL properties with name "last-image" to use value of new background
         sed -i -e 's@\(name="last-image"\).*@\1 type="string" value="'"$NEW_XFCE_BG"'"/>@' \
@@ -413,8 +418,11 @@ xfce|xubuntu)
         su "$CURR_USER" -c "dbus-launch gsettings set org.cinnamon.desktop.background picture-uri 'file://$XFCE_BG'" || true;
     fi
 
-    # sync XFCE background to GNOME background
-    su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri 'file://$XFCE_BG'" || true;
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        # sync XFCE background to GNOME background
+        su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri 'file://$XFCE_BG'" || true;
+    fi
 
     # sync XFCE background to AccountsService background
     NEW_AS_BG="'$XFCE_BG'"
@@ -489,18 +497,6 @@ cinnamon)
             -e 's@\(application/x-gnome-saved-search\)=.*@\1=nemo.desktop@' \
             /etc/gnome/defaults.list \
             /usr/share/applications/defaults.list || true;
-
-# 2019-02-06 rik: not necessary since /usr/share/applications/nemo-autostart.desktop triggers nemo-desktop?
-#
-#        if ! [ "$(pidof nemo-desktop)" ];
-#        then
-#            if [ $DEBUG ];
-#            then
-#                echo "nemo not started: attempting to start" | tee -a $LOGFILE
-#            fi
-#            # Ensure Nemo Started
-#            su "$CURR_USER" -c 'dbus-launch nemo-desktop &' || true;
-#        fi
     fi
 
     if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
@@ -586,8 +582,11 @@ cinnamon)
     #   installed but these settings were still true, thus not allowing nemo
     #   to draw the desktop. So set to false all the time even if nautilus not
     #   installed.
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
+        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+    fi
 
     if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
     then
@@ -627,8 +626,12 @@ cinnamon)
         then
             echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
         fi
-        echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-        echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+
+        if [ -x /usr/bin/gnome-shell ];
+        then
+            echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+            echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+        fi
     fi
 
 # ****BIONIC NOT SURE IF NEEDED
@@ -815,14 +818,14 @@ xfce|xubuntu)
     # --------------------------------------------------------------------------
     if [ -x /usr/bin/nemo ];
     then
-        # nemo default file manager AND draws desktop (icons) for wasta-xfce
+        # nemo default file manager for wasta-xfce
         desktop-file-edit --remove-key=NoDisplay \
             /usr/share/applications/nemo.desktop || true;
 
-        # allow nemo to draw the desktop
+        # set nemo to draw the desktop
         su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'" || true;
 
-        # allow nemo to draw the desktop
+        # ensure nemo can start if xfdesktop already running
         su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop ignored-desktop-handlers \"['conky', 'xfdesktop']\"" || true;
 
         # Ensure Nemo default folder handler
@@ -832,19 +835,23 @@ xfce|xubuntu)
             /etc/gnome/defaults.list \
             /usr/share/applications/defaults.list || true;
 
-        # ****BIONIC: don't think necessary (nemo-desktop now handles desktop)
-        # prevent nemo from drawing the desktop
-        # su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'"
+        # nemo-desktop ends up running, but not showing desktop icons. It is
+        # something to do with how it is started, possible conflict with
+        # xfdesktop, or other. At user level need to killall nemo-desktop and
+        # restart, but many contorted ways of doing it directly here haven't
+        # been successful, so making it a user level autostart.
 
-        # Nemo may be active: kill (will not error if not found)
-        #if [ "$(pidof nemo-desktop)" ];
-        #then
-        #    if [ $DEBUG ];
-        #    then
-        #        echo "nemo-desktop running (XFCE) and needs killed: $(pidof nemo-desktop)" | tee -a $LOGFILE
-        #    fi
-        #    killall nemo-desktop | tee -a $LOGFILE
-        #fi
+        NEMO_RESTART="/home/$CURR_USER/.config/autostart/nemo-desktop-restart.desktop"
+        if ! [ -e "$NEMO_RESTART" ];
+        then
+            # create autostart
+            if [ $DEBUG ];
+            then
+                echo "linking nemo-desktop-restart for xfce compatibility" | tee -a $LOGFILE
+            fi
+            su $CURR_USER -c "mkdir -p /home/$CURR_USER/.config/autostart"
+            su $CURR_USER -c "ln -s $DIR/resources/nemo-desktop-restart.desktop $NEMO_RESTART"
+        fi
     fi
 
     if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
@@ -937,8 +944,11 @@ xfce|xubuntu)
     #   installed but these settings were still true, thus not allowing nemo
     #   to draw the desktop. So set to false all the time even if nautilus not
     #   installed.
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
+        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+    fi
 
     # DISABLE notify-osd (xfce uses xfce4-notifyd)
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service ];
@@ -972,6 +982,8 @@ xfce|xubuntu)
     # NOTE: XFCE_DESKTOP file created above in background sync
 
     # first: determine if element exists
+    # style: 0 - None
+    #        2 - File/launcher icons
     DESKTOP_STYLE=""
     DESKTOP_STYLE=$(xmlstarlet sel -T -t -m \
         '//channel[@name="xfce4-desktop"]/property[@name="desktop-icons"]/property[@name="style"]/@value' \
@@ -1006,59 +1018,59 @@ xfce|xubuntu)
     # empty window frame that can't be closed (without re-activating the
     # empty frame by clicking on the panel icon).  Note above skypeforlinux
     # autolaunch will always start it minimized (after 10 second delay)
-    if [ -e /home/$CURR_USER/.config/skypeforlinux/settings.json ];
-    then
-        # set launchMinimized = false
-        sed -i -e 's@"app.launchMinimized":true@"app.launchMinimized":false@' \
-            /home/$CURR_USER/.config/skypeforlinux/settings.json
-    fi
+#    if [ -e /home/$CURR_USER/.config/skypeforlinux/settings.json ];
+#    then
+#        # set launchMinimized = false
+#        sed -i -e 's@"app.launchMinimized":true@"app.launchMinimized":false@' \
+#            /home/$CURR_USER/.config/skypeforlinux/settings.json
+#    fi
 
     # xfce clock applet loses it's config if opened and closed without first
     #    stopping the xfce4-panel.  So reset to defaults
     # https://askubuntu.com/questions/959339/xfce-panel-clock-disappears
-    XFCE_DEFAULT_PANEL="/etc/xdg/xdg-xfce/xfce4/panel/default.xml"
-    XFCE_PANEL="/home/$CURR_USER/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
-    if [ -e "$XFCE_PANEL" ];
-    then
+#    XFCE_DEFAULT_PANEL="/etc/xdg/xdg-xfce/xfce4/panel/default.xml"
+#    XFCE_PANEL="/home/$CURR_USER/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
+#    if [ -e "$XFCE_PANEL" ];
+#    then
         # using xmlstarlet since can't be sure of clock plugin #
-        DEFAULT_DIGITAL_FORMAT=$(xmlstarlet sel -T -t -m \
-            '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="digital-format"]/@value' \
-           -v . -n $XFCE_DEFAULT_PANEL)
+#        DEFAULT_DIGITAL_FORMAT=$(xmlstarlet sel -T -t -m \
+#            '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="digital-format"]/@value' \
+#           -v . -n $XFCE_DEFAULT_PANEL)
         #    DIGITAL_FORMAT=$(xmlstarlet sel -T -t -m \
         #        '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="digital-format"]/@value' \
         #        -v . -n $XFCE_PANEL)
-        BLANK_DIGITAL_FORMAT=$(grep '"digital-format" type="string" value=""' $XFCE_PANEL)
+#        BLANK_DIGITAL_FORMAT=$(grep '"digital-format" type="string" value=""' $XFCE_PANEL)
 
-        if [ "$BLANK_DIGITAL_FORMAT" ];
-        then
-            if [ $DEBUG ];
-            then
-                echo "xfce4-panel clock digital-format removed: resetting" | tee -a $LOGFILE
-            fi
+ #       if [ "$BLANK_DIGITAL_FORMAT" ];
+  #      then
+#            if [ $DEBUG ];
+#            then
+#                echo "xfce4-panel clock digital-format removed: resetting" | tee -a $LOGFILE
+#            fi
             # rik: below doesn't work since when $XFCE_PANEL put in ~/.config the NAMEs
             # are removed from the plugin properties: don't want to rely on plugin number so
             # instead will have to hack it with sed
             #        xmlstarlet ed --inplace -u \
             #            '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="digital-format"]/@value' \
             #            -v "$DEFAULT_DIGITAL_FORMAT" $XFCE_PANEL
-            sed -i -e 's@\("digital-format" type="string" value=\)""@\1"'"$DEFAULT_DIGITAL_FORMAT"'"@' \
-                $XFCE_PANEL
-        fi
+#            sed -i -e 's@\("digital-format" type="string" value=\)""@\1"'"$DEFAULT_DIGITAL_FORMAT"'"@' \
+#                $XFCE_PANEL
+#        fi
 
-        DEFAULT_TOOLTIP_FORMAT=$(xmlstarlet sel -T -t -m \
-            '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="tooltip-format"]/@value' \
-            -v . -n $XFCE_DEFAULT_PANEL)
-        BLANK_TOOLTIP_FORMAT=$(grep '"tooltip-format" type="string" value=""' $XFCE_PANEL)
+ #       DEFAULT_TOOLTIP_FORMAT=$(xmlstarlet sel -T -t -m \
+  #          '//channel[@name="xfce4-panel"]/property[@name="plugins"]/property[@value="clock"]/property[@name="tooltip-format"]/@value' \
+   #         -v . -n $XFCE_DEFAULT_PANEL)
+    #    BLANK_TOOLTIP_FORMAT=$(grep '"tooltip-format" type="string" value=""' $XFCE_PANEL)
 
-        if [ "$BLANK_TOOLTIP_FORMAT" ];
-        then
-            if [ $DEBUG ];
-            then
-                echo "xfce4-panel clock tooltip-format removed: resetting" | tee -a $LOGFILE
-            fi
-            sed -i -e 's@\("tooltip-format" type="string" value=\)""@\1"'"$DEFAULT_TOOLTIP_FORMAT"'"@' $XFCE_PANEL
-        fi
-    fi
+     #   if [ "$BLANK_TOOLTIP_FORMAT" ];
+      #  then
+       #     if [ $DEBUG ];
+        #    then
+         #       echo "xfce4-panel clock tooltip-format removed: resetting" | tee -a $LOGFILE
+          #  fi
+           # sed -i -e 's@\("tooltip-format" type="string" value=\)""@\1"'"$DEFAULT_TOOLTIP_FORMAT"'"@' $XFCE_PANEL
+  #      fi
+ #   fi
 ;;
 
 *)
@@ -1107,36 +1119,52 @@ then
         fi
     fi
 
-    if [ "$(pidof nautilus-desktop)" ];
+    if [ -x /usr/bin/nautilus ];
     then
-        echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
-    else
-        echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
+        if [ "$(pidof nautilus-desktop)" ];
+        then
+            echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
+        else
+            echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
+        fi
     fi
+
     echo "final settings:" | tee -a $LOGFILE
+
     if [ -x /usr/bin/cinnamon ];
     then
         CINNAMON_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.cinnamon.desktop.background picture-uri')
         echo "cinnamon bg NEW: $CINNAMON_BG_NEW" | tee -a $LOGFILE
     fi
+
     if [ -x /usr/bin/xfce4-session ];
     then
         #XFCE_BG_NEW=$(su "$CURR_USER" -c "dbus-launch xfconf-query -p /backdrop/screen0/monitor0/workspace0/last-image -c xfce4-desktop" || true;)
         XFCE_BG_NEW=$(xmlstarlet sel -T -t -m \
-            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitor0"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
+            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
             -v . -n $XFCE_DESKTOP)
         echo "xfce bg NEW: $XFCE_BG_NEW" | tee -a $LOGFILE
     fi
-    GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
+
+    if [ -x /usr/bin/gnome-shell ];
+    then
+        GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
+        echo "gnome bg NEW: $GNOME_BG_NEW" | tee -a $LOGFILE
+    fi
+
     AS_BG_NEW=$(sed -n "s@BackgroundFile=@@p" "$AS_FILE")
-    echo "gnome bg NEW: $GNOME_BG_NEW" | tee -a $LOGFILE
     echo "as bg NEW: $AS_BG_NEW" | tee -a $LOGFILE
+
     if [ -x /usr/bin/nemo ];
     then
         echo "NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
     fi
-    echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-    echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+
+    if [ -x /usr/bin/nautilus ];
+    then
+        echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+        echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+    fi
 fi
 
 # Kill dconf processes that were potentially triggered by this script that need

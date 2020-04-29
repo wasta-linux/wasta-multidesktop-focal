@@ -220,16 +220,25 @@ then
         /usr/share/themes/Arc-Dark-solid/gtk-2.0/gtkrc \
         /usr/share/themes/Arc-Darker-solid/gtk-2.0/gtkrc
 
-    # add whiskermenu compatibility (Arc-Darker and Arc-Dark only)
-    # first delete:
-    sed -i -e '\@gtk-whiskermenu-wasta@d' \
-        /usr/share/themes/Arc-Dark-solid/gtk-3.0/gtk.css \
-        /usr/share/themes/Arc-Darker-solid/gtk-3.0/gtk.css
+    # add xfce compatibility (Arc-Darker and Arc-Dark only)
+    WASTA_GTK_FILE="/usr/share/wasta-xfce/resources/gtk-xfce-wasta.css"
+    if [ -e "$WASTA_GTK_FILE" ];
+    then
+        # first delete (legacy cleanup):
+        sed -i -e '\@gtk-whiskermenu-wasta@d' \
+            /usr/share/themes/Arc-Dark-solid/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker-solid/gtk-3.0/gtk.css
 
-    # then add:
-    sed -i -e "$ a @import url(\"$DIR/resources/gtk-whiskermenu-wasta.css\");" \
-        /usr/share/themes/Arc-Dark-solid/gtk-3.0/gtk.css \
-        /usr/share/themes/Arc-Darker-solid/gtk-3.0/gtk.css
+        # first delete:
+        sed -i -e '\@gtk-xfce-wasta@d' \
+            /usr/share/themes/Arc-Dark-solid/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker-solid/gtk-3.0/gtk.css
+
+        # then add:
+        sed -i -e "$ a @import url(\"$WASTA_GTK_FILE\");" \
+            /usr/share/themes/Arc-Dark-solid/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker-solid/gtk-3.0/gtk.css
+    fi
 
     # make Arc-solid themes compatible with xfce4-windowck-plugin (not sure why
     #   the .svg is not recognized by the code, but adding the .png solves it)
@@ -925,16 +934,9 @@ then
             /etc/apparmor.d/usr.bin.evince
     fi
 
-    if [ -e /usr/share/wasta-xfce ];
-    then
-        # only for wasta-xfce allow XFCE to trigger nemo-autostart
-        desktop-file-edit --add-only-show-in=XFCE \
-            /usr/share/applications/nemo-autostart.desktop
-    else
-        # if no wasta-xfce don't allow XFCE to trigger nemo-autostart
-        desktop-file-edit --remove-only-show-in=XFCE \
-            /usr/share/applications/nemo-autostart.desktop
-    fi
+    # legacy cleanup: don't allow XFCE to trigger nemo-autostart
+    desktop-file-edit --remove-only-show-in=XFCE \
+        /usr/share/applications/nemo-autostart.desktop
 fi
 
 # ------------------------------------------------------------------------------
@@ -1034,12 +1036,13 @@ fi
 # ------------------------------------------------------------------------------
 # skypeforlinux
 # ------------------------------------------------------------------------------
+# 20.04 needed???
 # appindicator compatibility
-if [ -e /usr/share/applications/skypeforlinux.desktop ];
-then
-    desktop-file-edit --set-key=Exec --set-value='sh -c "env XDG_CURRENT_DESKTOP=Unity /usr/bin/skypeforlinux %U"' \
-        /usr/share/applications/skypeforlinux.desktop> /dev/null 2>&1 || true;
-fi
+#if [ -e /usr/share/applications/skypeforlinux.desktop ];
+#then
+#    desktop-file-edit --set-key=Exec --set-value='sh -c "env XDG_CURRENT_DESKTOP=Unity /usr/bin/skypeforlinux %U"' \
+#        /usr/share/applications/skypeforlinux.desktop> /dev/null 2>&1 || true;
+#fi
 
 # ------------------------------------------------------------------------------
 # slick-greeter
