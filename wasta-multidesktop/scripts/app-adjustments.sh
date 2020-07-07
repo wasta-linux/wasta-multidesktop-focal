@@ -136,6 +136,37 @@ fi
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
+# *-app-builder
+# ------------------------------------------------------------------------------
+# change to "Education" ("Accessories"): default is "Development"
+if [ -e /usr/share/applications/dictionary-app-builder.desktop ];
+then
+    desktop-file-edit --add-category=Education \
+        /usr/share/applications/dictionary-app-builder.desktop
+
+    desktop-file-edit --remove-category=Development \
+        /usr/share/applications/dictionary-app-builder.desktop
+fi
+
+if [ -e /usr/share/applications/reading-app-builder.desktop ];
+then
+    desktop-file-edit --add-category=Education \
+        /usr/share/applications/reading-app-builder.desktop
+
+    desktop-file-edit --remove-category=Development \
+        /usr/share/applications/reading-app-builder.desktop
+fi
+
+if [ -e /usr/share/applications/scripture-app-builder.desktop ];
+then
+    desktop-file-edit --add-category=Education \
+        /usr/share/applications/scripture-app-builder.desktop
+
+    desktop-file-edit --remove-category=Development \
+        /usr/share/applications/scripture-app-builder.desktop
+fi
+
+# ------------------------------------------------------------------------------
 # arc-theme
 # ------------------------------------------------------------------------------
 if [ -e /usr/share/themes/Arc ];
@@ -147,15 +178,15 @@ then
         /usr/share/themes/Arc-Dark/gtk-2.0/gtkrc \
         /usr/share/themes/Arc-Darker/gtk-2.0/gtkrc
 
+    # legacy cleanup
+    sed -i -e '\@gtk-whiskermenu-wasta@d' \
+        /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+        /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+
     # add xfce compatibility (Arc-Darker and Arc-Dark only)
     WASTA_GTK_FILE="/usr/share/wasta-xfce/resources/gtk-xfce-wasta.css"
     if [ -e "$WASTA_GTK_FILE" ];
     then
-        # first delete (legacy cleanup):
-        sed -i -e '\@gtk-whiskermenu-wasta@d' \
-            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
-            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
-
         # first delete:
         sed -i -e '\@gtk-xfce-wasta@d' \
             /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
@@ -855,13 +886,13 @@ fi
 # ------------------------------------------------------------------------------
 # change to "Utility" ("Accessories"): default is "Development" (only item
 #   in that category, so we are trying to not have "Programming" by default)
-if [ -e /usr/share/applications/meld.desktop ];
+if [ -e /usr/share/applications/org.gnome.meld.desktop ];
 then
     desktop-file-edit --add-category=Utility \
-        /usr/share/applications/meld.desktop
+        /usr/share/applications/org.gnome.meld.desktop
 
     desktop-file-edit --remove-category=Development \
-        /usr/share/applications/meld.desktop
+        /usr/share/applications/org.gnome.meld.desktop
 fi
 
 # ------------------------------------------------------------------------------
