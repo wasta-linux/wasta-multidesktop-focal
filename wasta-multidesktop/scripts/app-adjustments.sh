@@ -198,6 +198,21 @@ then
             /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
     fi
 
+    # add synaptic compatibility (Arc-Darker and Arc-Dark only)
+    WASTA_GTK_FILE="/usr/share/wasta-multidesktop/resources/gtk-synaptic-wasta.css"
+    if [ -e "$WASTA_GTK_FILE" ];
+    then
+        # first delete:
+        sed -i -e '\@gtk-synaptic-wasta@d' \
+            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+
+        # then add:
+        sed -i -e "$ a @import url(\"$WASTA_GTK_FILE\");" \
+            /usr/share/themes/Arc-Dark/gtk-3.0/gtk.css \
+            /usr/share/themes/Arc-Darker/gtk-3.0/gtk.css
+    fi
+
     # make Arc themes compatible with xfce4-windowck-plugin (not sure why
     #   the .svg is not recognized by the code, but adding the .png solves it)
     if ! [ -e "/usr/share/themes/Arc/unity/close_focused_normal.png" ];

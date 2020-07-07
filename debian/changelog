@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.1) focal; urgency=medium
+
+  * added gtk-synaptic-wasta.css patches for Arc-Darker
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 07 Jul 2020 16:11:45 -0500
+
 wasta-multidesktop-focal (1.0.0) focal; urgency=medium
 
   * app-adjustments: adding mintinstall, flatpak, removing gnome-software
