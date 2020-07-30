@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.2) focal; urgency=medium
+
+  * wasta-login.sh: adding wasta-gnome session compatibility
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Thu, 30 Jul 2020 11:08:19 -0500
+
 wasta-multidesktop-focal (1.0.1) focal; urgency=medium
 
   * added gtk-synaptic-wasta.css patches for Arc-Darker
