@@ -431,6 +431,36 @@ then
     fi
 
     # --------------------------------------------------------------------------
+    # IF gnome-language-selector then add to Cinnamon Settings
+    # --------------------------------------------------------------------------
+    if [ -e /usr/share/applications/gnome-language-selector.desktop ]\
+    && ! [ -e /usr/share/applications/mintlocale.desktop ];
+    then
+        # first remove a potential duplicate:
+        sed -i -e '\@gnome-language-selector@d' \
+            /usr/share/cinnamon/cinnamon-settings/cinnamon-settings.py
+
+        # then add in the "STANDALONE_MODULES" section)
+        sed -i -e 's@\(STANDALONE_MODULES \=.*\)@\1\n    [_("Language"),                      "gnome-language-selector",             "cs-language",           "prefs",          _("language, install, foreign")],@' \
+            /usr/share/cinnamon/cinnamon-settings/cinnamon-settings.py
+    fi
+
+    # --------------------------------------------------------------------------
+    # IF im-config then add to Cinnamon Settings
+    # --------------------------------------------------------------------------
+    if [ -e /usr/share/applications/im-config.desktop ]\
+    && ! [ -e /usr/share/applications/mintlocale-im.desktop ];
+    then
+        # first remove a potential duplicate:
+        sed -i -e '\@im-config@d' \
+            /usr/share/cinnamon/cinnamon-settings/cinnamon-settings.py
+
+        # then add in the "STANDALONE_MODULES" section)
+        sed -i -e 's@\(STANDALONE_MODULES \=.*\)@\1\n    [_("Input Method"),                  "im-config",                           "cs-input-method",       "prefs",          _("language, install, foreign, input, method, chinese, korean, japanese, typing")],@' \
+            /usr/share/cinnamon/cinnamon-settings/cinnamon-settings.py
+    fi
+
+    # --------------------------------------------------------------------------
     # Cinnamon Applet Tweaks: core shipping with cinnamon only:
     #   applets added by wasta-cinnamon-layout are adjusted there
     # --------------------------------------------------------------------------

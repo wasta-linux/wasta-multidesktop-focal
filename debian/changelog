@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.3) focal; urgency=medium
+
+  * add "Languages" and "Input method" to cinnamon system settings
+
+ -- Justin Luth <jluth@mail.com>  Wed, 12 Aug 2020 10:20:42 +0300
+
 wasta-multidesktop-focal (1.0.2) focal; urgency=medium
 
   * wasta-login.sh: adding wasta-gnome session compatibility
