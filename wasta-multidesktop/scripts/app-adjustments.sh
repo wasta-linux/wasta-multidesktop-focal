@@ -322,10 +322,21 @@ fi
 # ------------------------------------------------------------------------------
 if [ -x /usr/bin/bookletimposer ];
 then
-    # Capitalize Name
+    # https://git.codecoop.org/kjo/bookletimposer/-/blob/master/data/bookletimposer.desktop
+    # Cleanup:
+    #   - Remove bad Version key (one source of desktop file errors).
+    #   - Revert "Name" key to original value.
+    desktop-file-edit --remove-key="Version" \
+        /usr/share/applications/bookletimposer.desktop >/dev/null 2>&1 || true;
+    desktop-file-edit --set-name="bookletimposer" \
+        /usr/share/applications/bookletimposer.desktop >/dev/null 2>&1 || true;
+
+    # Capitalize Name (for supported languages)
     #   sending output to /dev/null because desktop file has errors from
     #   ubuntu that I am not fixing (such as using a non-quoted "$" in exec)
-    desktop-file-edit --set-name="Booklet Imposer" \
+    desktop-file-edit --set-key="Name[en]" --set-value="Booklet Imposer" \
+        /usr/share/applications/bookletimposer.desktop >/dev/null 2>&1 || true;
+    desktop-file-edit --set-key="Name[fr]" --set-value="Imposeur de brochures" \
         /usr/share/applications/bookletimposer.desktop >/dev/null 2>&1 || true;
 fi
 
@@ -632,12 +643,21 @@ fi
 # ------------------------------------------------------------------------------
 if [ -x /usr/bin/gimp ];
 then
-    # add "Advanced" to comment
-    desktop-file-edit --set-comment="Advanced image and photo editor" \
+    # https://gitlab.gnome.org/GNOME/gimp/-/blob/master/desktop/gimp.desktop.in.in
+    # Revert "Name" and "Comment" to defaults.
+    desktop-file-edit --set-name="GNU Image Manipulation Program" \
+        /usr/share/applications/gimp.desktop
+    desktop-file-edit --set-comment="Create images and edit photographs" \
+        /usr/share/applications/gimp.desktop
+
+    # add "Advanced" to English comment
+    desktop-file-edit --set-key="Comment[en]" --set-value="Advanced image and photo editor" \
         /usr/share/applications/gimp.desktop
 
     # default name is TOO LONG
-    desktop-file-edit --set-name="GIMP Image Editor" \
+    desktop-file-edit --set-key="Name[en]" --set-value="GIMP Image Editor" \
+        /usr/share/applications/gimp.desktop
+    desktop-file-edit --set-key="Name[fr]" --set-value="Éditeur d'images GIMP" \
         /usr/share/applications/gimp.desktop
 fi
 
@@ -725,8 +745,12 @@ then
     sed -i -e 's@\(hunspell dictionariesPath\).*@\1="/usr/share/hunspell"/>@' \
         /home/*/.goldendict/config >/dev/null 2>&1
 
-    # fix comment
-    desktop-file-edit --set-comment="Dictionary / Thesaurus tool" \
+    # fix comment (revert default, set for [en] and [fr])
+    desktop-file-edit --set-comment="GoldenDict" \
+        /usr/share/applications/goldendict.desktop
+    desktop-file-edit --set-key="Comment[en]" --set-value="Dictionary / Thesaurus tool" \
+        /usr/share/applications/goldendict.desktop
+    desktop-file-edit --set-key="Comment[fr]" --set-value="Outil de dictionnaire" \
         /usr/share/applications/goldendict.desktop
 
     # 18.04: goldendict (qt5) plus cinnamon plus app indicator will not show
@@ -881,8 +905,16 @@ then
     desktop-file-edit --add-category=X-XFCE-HardwareSettings \
         /usr/share/applications/ibus-setup.desktop
 
-    # rename to "IBus Keyboards" for clarity
-    desktop-file-edit --set-name="IBus Keyboards" \
+    # rename to "IBus Keyboards" for clarity (revert default name, change for [en] & [fr])
+    desktop-file-edit --set-name="IBus Preferences" \
+        /usr/share/applications/ibus-setup.desktop
+    desktop-file-edit --set-key="Name[en]" --set-value="IBus Keyboards" \
+        /usr/share/applications/ibus-setup.desktop
+    desktop-file-edit --set-key="Name[fr]" --set-value="Méthode d'entrée IBus" \
+        /usr/share/applications/ibus-setup.desktop
+    # set French comment
+    desktop-file-edit --set-key="Comment[fr]" \
+        --set-value="Configurer la méthode d'entrée par IBus" \
         /usr/share/applications/ibus-setup.desktop
 fi
 
@@ -974,8 +1006,12 @@ then
     desktop-file-edit --remove-key=OnlyShowIn \
         /usr/share/applications/modem-manager-gui.desktop
     
-    # modify comment so easier to find on search
-    desktop-file-edit --set-comment="3G USB Modem Manager" \
+    # modify comment so easier to find on search (set specifically for [en]/[fr])
+    desktop-file-edit --set-comment="Control EDGE/3G/4G broadband modem specific functions" \
+        /usr/share/applications/modem-manager-gui.desktop
+    desktop-file-edit --set-key="Comment[en]" --set-value="3G USB Modem Manager" \
+        /usr/share/applications/modem-manager-gui.desktop
+    desktop-file-edit --set-key="Comment[fr]" --set-value="Gestionnaire de modem USB 3G" \
         /usr/share/applications/modem-manager-gui.desktop
 fi
 
@@ -1196,7 +1232,12 @@ fi
 if [ -e /usr/share/applications/software-properties-gtk.desktop ];
 then
     # rename to "Software Settings" or else get confused with "Software Updates"
-    desktop-file-edit --set-name="Software Settings" \
+    #   - revert default, then set for [en] and [fr]
+    desktop-file-edit --set-name="Software & Updates" \
+        /usr/share/applications/software-properties-gtk.desktop
+    desktop-file-edit --set-key="Name[en]" --set-value="Software Settings" \
+        /usr/share/applications/software-properties-gtk.desktop
+    desktop-file-edit --set-key="Name[fr]" --set-value="Configuration de Logithèque" \
         /usr/share/applications/software-properties-gtk.desktop
 
     # add to XFCE Settings Manager
@@ -1221,7 +1262,13 @@ then
 #    sed -i -e 's@^Exec=synaptic-pkexec@Exec=env GTK_THEME=Adwaita synaptic-pkexec@' \
 #        /usr/share/applications/goldendict.desktop
 #    GTK_THEME=Adwaita synaptic
-    desktop-file-edit --set-name="Synaptic Software Package Manager" \
+    # Set default name, then set Wasta names for [en] and [fr].
+    desktop-file-edit --set-name="Synaptic Package Manager" \
+        /usr/share/applications/synaptic.desktop
+    desktop-file-edit --set-key="Name[en]" --set-value="Synaptic Software Package Manager" \
+        /usr/share/applications/synaptic.desktop
+    desktop-file-edit --set-key="Name[fr]" \
+        --set-value="Gestionnaire de paquets de logiciels Synaptic" \
         /usr/share/applications/synaptic.desktop
 fi
 
@@ -1466,8 +1513,11 @@ fi
 # ------------------------------------------------------------------------------
 if [ -e /usr/share/applications/xfce-settings-manager.desktop ];
 then
-    # Change comment so found by "system, control, panel"
-    desktop-file-edit --set-comment="Graphical System Control Panel for Xfce 4" \
+    # Change comment so found by "system, control, panel" (revert default, change [en])
+    desktop-file-edit --set-comment="Graphical Settings Manager for Xfce 4" \
+        /usr/share/applications/xfce-settings-manager.desktop
+    desktop-file-edit --set-key="Comment[en]" \
+        --set-value="Graphical System Control Panel for Xfce 4" \
         /usr/share/applications/xfce-settings-manager.desktop
 fi
 
