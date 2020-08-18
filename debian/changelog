@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.4) focal; urgency=medium
+
+  * use "Name[en]", etc. for launcher customizations instead of "Name", etc.
+
+ -- Nate Marti <nate_marti@sil.org>  Tue, 18 Aug 2020 17:47:33 +0200
+
 wasta-multidesktop-focal (1.0.3) focal; urgency=medium
 
   * add "Languages" and "Input method" to cinnamon system settings
