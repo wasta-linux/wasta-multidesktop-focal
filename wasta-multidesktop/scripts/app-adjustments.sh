@@ -406,7 +406,8 @@ then
     # --------------------------------------------------------------------------
     # IF iBus then add to Cinnamon Settings
     # --------------------------------------------------------------------------
-    if [ -e /usr/share/applications/ibus-setup.desktop ];
+    if [ -e /usr/share/applications/ibus-setup.desktop ] | \
+       [ -e /usr/share/applications/org.freedesktop.IBus.Setup.desktop ];
     then
         # ibus-setup: first remove:
         sed -i -e '\@ibus-setup@d' \
@@ -854,6 +855,23 @@ then
     # rename to "IBus Keyboards" for clarity
     desktop-file-edit --set-name="IBus Keyboards" \
         /usr/share/applications/ibus-setup.desktop
+fi
+
+# add to XFCE Settings Manager
+if [ -e /usr/share/applications/org.freedesktop.IBus.Setup.desktop ];
+then
+    desktop-file-edit --add-category=Settings \
+        /usr/share/applications/org.freedesktop.IBus.Setup.desktop
+
+    desktop-file-edit --add-category=X-XFCE-SettingsDialog \
+        /usr/share/applications/org.freedesktop.IBus.Setup.desktop
+
+    desktop-file-edit --add-category=X-XFCE-HardwareSettings \
+        /usr/share/applications/org.freedesktop.IBus.Setup.desktop
+
+    # rename to "IBus Keyboards" for clarity
+    desktop-file-edit --set-name="IBus Keyboards" \
+        /usr/share/applications/org.freedesktop.IBus.Setup.desktop
 fi
 
 # ------------------------------------------------------------------------------
