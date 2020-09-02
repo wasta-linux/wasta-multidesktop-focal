@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.5) focal; urgency=medium
+
+  * app-adjustments.sh: update ibus-setup desktop filename for focal
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Wed, 02 Sep 2020 17:26:52 +0300
+
 wasta-multidesktop-focal (1.0.4) focal; urgency=medium
 
   * use "Name[en]", etc. for launcher customizations instead of "Name", etc.

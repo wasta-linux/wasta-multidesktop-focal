@@ -74,6 +74,7 @@
 #   - replicate arc-themes adjustments to arc-solid themes
 # 2020-01-24 rik: re-enable wasta-ibus script (it now stops and restarts ibus
 #   if it is active.
+# 2020-09-02 rik: update ibus-setup desktop file name for focal
 #
 # ==============================================================================
 
