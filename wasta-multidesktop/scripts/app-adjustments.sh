@@ -748,7 +748,7 @@ then
         /home/*/.goldendict/config >/dev/null 2>&1
 
     # fix comment (revert default, set for [en] and [fr])
-    desktop-file-edit --set-comment="GoldenDict" \
+    desktop-file-edit --set-comment="Dictionary / Thesaurus tool" \
         /usr/share/applications/goldendict.desktop
     desktop-file-edit --set-key="Comment[en]" --set-value="Dictionary / Thesaurus tool" \
         /usr/share/applications/goldendict.desktop
@@ -1028,7 +1028,8 @@ then
     # modify comment so easier to find on search (set specifically for [en]/[fr])
     desktop-file-edit --set-comment="Control EDGE/3G/4G broadband modem specific functions" \
         /usr/share/applications/modem-manager-gui.desktop
-    desktop-file-edit --set-key="Comment[en]" --set-value="3G USB Modem Manager" \
+    # add "USB" to default english comment
+    desktop-file-edit --set-key="Comment[en]" --set-value="Control USB EDGE/3G/4G broadband modem specific functions" \
         /usr/share/applications/modem-manager-gui.desktop
     desktop-file-edit --set-key="Comment[fr]" --set-value="Gestionnaire de modem USB 3G" \
         /usr/share/applications/modem-manager-gui.desktop
@@ -1273,18 +1274,16 @@ fi
 # ------------------------------------------------------------------------------
 # synaptic
 # ------------------------------------------------------------------------------
-# For 20.04, Arc-Darker theme gives big black box and bad icon contrast
-#   so am defaulting to Adwaita theme
-# TODO: can't get pkexec to change theme.
 if [ -e /usr/share/applications/synaptic.desktop ];
 then
-#    sed -i -e 's@^Exec=synaptic-pkexec@Exec=env GTK_THEME=Adwaita synaptic-pkexec@' \
-#        /usr/share/applications/goldendict.desktop
-#    GTK_THEME=Adwaita synaptic
     # Set default name, then set Wasta names for [en] and [fr].
     desktop-file-edit --set-name="Synaptic Package Manager" \
         /usr/share/applications/synaptic.desktop
-    desktop-file-edit --set-key="Name[en]" --set-value="Synaptic Software Package Manager" \
+    # previously had set to "Synaptic Software Package Manager" since cinnamon
+    #   threw away search results if the search term found in the name of other
+    #   applications. But as of Cinnamon 4.6.7 this is not the case, so adding
+    #   "Software" to name not necessary.
+    desktop-file-edit --set-key="Name[en]" --set-value="Synaptic Package Manager" \
         /usr/share/applications/synaptic.desktop
     desktop-file-edit --set-key="Name[fr]" \
         --set-value="Gestionnaire de paquets de logiciels Synaptic" \
