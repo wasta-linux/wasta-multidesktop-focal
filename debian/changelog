@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.7) focal; urgency=medium
+
+  * wasta-login.sh: correcting Thunar.desktop to thunar.desktop for focal
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Sun, 20 Sep 2020 09:39:30 +0300
+
 wasta-multidesktop-focal (1.0.6) focal; urgency=medium
 
   * app-adjustments: minor update to display names since Cinnamon menu

@@ -75,6 +75,7 @@
 #       - ensure gnome NOT drawing desktop even if Nautilus not installed
 #   2020-04-28 rik: initial cleanup for focal and xfce
 #   2020-07-30 rik: adding wasta-gnome session compatibility
+#   2020-09-20 rik: correct to thunar.desktop not Thunar.desktop for focal
 #
 # ==============================================================================
 
@@ -623,10 +624,10 @@ cinnamon)
     # XFCE Settings
     # --------------------------------------------------------------------------
     # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/Thunar.desktop ];
+    if [ -e /usr/share/applications/thunar.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/Thunar.desktop || true;
+            /usr/share/applications/thunar.desktop || true;
     fi
 
     if [ -e /usr/share/applications/thunar-settings.desktop ];
@@ -806,10 +807,10 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # XFCE Settings
     # --------------------------------------------------------------------------
     # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/Thunar.desktop ];
+    if [ -e /usr/share/applications/thunar.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/Thunar.desktop || true;
+            /usr/share/applications/thunar.desktop || true;
     fi
 
     if [ -e /usr/share/applications/thunar-settings.desktop ];
@@ -980,10 +981,10 @@ xfce|xubuntu)
     # --------------------------------------------------------------------------
 
     # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/Thunar.desktop ];
+    if [ -e /usr/share/applications/thunar.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/Thunar.desktop || true;
+            /usr/share/applications/thunar.desktop || true;
     fi
 
     if [ -e /usr/share/applications/thunar-settings.desktop ];
@@ -1098,10 +1099,10 @@ xfce|xubuntu)
     fi
 
     # Thunar: show (even though only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/Thunar.desktop ];
+    if [ -e /usr/share/applications/thunar.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=false \
-            /usr/share/applications/Thunar.desktop || true;
+            /usr/share/applications/thunar.desktop || true;
     fi
 
     if [ -e /usr/share/applications/thunar-settings.desktop ];
