@@ -1072,6 +1072,9 @@ then
     # legacy cleanup: don't allow XFCE to trigger nemo-autostart
     desktop-file-edit --remove-only-show-in=XFCE \
         /usr/share/applications/nemo-autostart.desktop
+
+    desktop-file-edit --set-icon=system-file-manager \
+        /usr/share/applications/nemo.desktop
 fi
 
 # ------------------------------------------------------------------------------

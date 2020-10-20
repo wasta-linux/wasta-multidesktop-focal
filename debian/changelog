@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.10) focal; urgency=medium
+
+  * app-adjustments: set nemo icon to system-file-manager
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 20 Oct 2020 14:26:25 +0300
+
 wasta-multidesktop-focal (1.0.9) focal; urgency=medium
 
   * app-adjustments: adding 16px support to papirus-folders script
