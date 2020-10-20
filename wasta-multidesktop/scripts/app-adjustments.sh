@@ -77,6 +77,7 @@
 # 2020-09-02 rik: update ibus-setup desktop file name for focal
 # 2020-10-20 rik: ePapirus icons: copying 24x24 places icons to 16x16 places
 #   icons so that are colorized rather than dark gray
+# 2020-10-20 rik: adding 16px support to papirus-folders
 #
 # ==============================================================================
 
@@ -1152,7 +1153,17 @@ then
 fi
 
 # ------------------------------------------------------------------------------
-# Papirus Icon Theme
+# papirus-folders
+# ------------------------------------------------------------------------------
+# add support to colorize 16x16 folder
+
+if [ -e "/usr/bin/papirus-folders" ];
+then
+        sed -i -e 's@(22x22@(16x16 22x22@' /usr/bin/papirus-folders
+fi
+
+# ------------------------------------------------------------------------------
+# papirus-icon-theme
 # ------------------------------------------------------------------------------
 # was going to symlink ePapirus 24 px places to 16 px places (so colorized) but
 #   if a symlink and then papirus-icon-theme updates, will error. So just

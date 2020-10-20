@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (1.0.9) focal; urgency=medium
+
+  * app-adjustments: adding 16px support to papirus-folders script
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 20 Oct 2020 11:51:38 +0300
+
 wasta-multidesktop-focal (1.0.8) focal; urgency=medium
 
   * app-adjustments: copying ePapirus 24x24 places to 16x16 places
