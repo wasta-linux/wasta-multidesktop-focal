@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (1.0.8) focal; urgency=medium
+
+  * app-adjustments: copying ePapirus 24x24 places to 16x16 places
+    so that are colorized
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 20 Oct 2020 11:28:49 +0300
+
 wasta-multidesktop-focal (1.0.7) focal; urgency=medium
 
   * wasta-login.sh: correcting Thunar.desktop to thunar.desktop for focal

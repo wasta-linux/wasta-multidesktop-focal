@@ -75,6 +75,8 @@
 # 2020-01-24 rik: re-enable wasta-ibus script (it now stops and restarts ibus
 #   if it is active.
 # 2020-09-02 rik: update ibus-setup desktop file name for focal
+# 2020-10-20 rik: ePapirus icons: copying 24x24 places icons to 16x16 places
+#   icons so that are colorized rather than dark gray
 #
 # ==============================================================================
 
@@ -1147,6 +1149,28 @@ then
     # remove from "Accessibility" (only 2 items there): already in "Utility"
     desktop-file-edit --remove-category=Accessibility \
         /usr/share/applications/orca.desktop
+fi
+
+# ------------------------------------------------------------------------------
+# Papirus Icon Theme
+# ------------------------------------------------------------------------------
+# was going to symlink ePapirus 24 px places to 16 px places (so colorized) but
+#   if a symlink and then papirus-icon-theme updates, will error. So just
+#   brute force copying 24 px icons to 16 px icons for now.
+
+PLACES_24=/usr/share/icons/ePapirus/24x24/places/
+ICONS_16=/usr/share/icons/ePapirus/16x16/
+if [ -e "$PLACES_24" ];
+then
+    if ! [ -d "$ICONS_16/places-wasta-save" ];
+    then
+        # save original folder (postrm will restore)
+        echo
+        echo "*** Saving original ePapirus 16x16 'places' icons"
+        echo
+        mv "$ICONS_16/places/" "$ICONS_16/places-wasta-save/"
+    fi
+    cp -rf "$PLACES_24" "$ICONS_16/"
 fi
 
 # ------------------------------------------------------------------------------
