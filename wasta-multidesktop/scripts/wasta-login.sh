@@ -572,10 +572,10 @@ cinnamon)
             /usr/share/applications/gnome-tweak-tool.desktop || true;
     fi
 
-    if [ -e /usr/share/applications/nautilus.desktop ];
+    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nautilus.desktop || true;
+            /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
         # Nautilus may be active: kill (will not error if not found)
         if [ "$(pidof nautilus-desktop)" ];
@@ -754,10 +754,10 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
             /usr/share/applications/gnome-tweak-tool.desktop || true;
     fi
 
-    if [ -e /usr/share/applications/nautilus.desktop ];
+    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
     then
         desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nautilus.desktop || true;
+            /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
         # Allow Nautilus to draw the desktop
         su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons true' || true;
@@ -765,8 +765,8 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
 
         # Ensure Nautilus default folder handler
         sed -i \
-            -e 's@\(inode/directory\)=.*@\1=nautilus-folder-handler.desktop@' \
-            -e 's@\(application/x-gnome-saved-search\)=.*@\1=nautilus-folder-handler.desktop@' \
+            -e 's@\(inode/directory\)=.*@\1=org.gnome.Nautilus.desktop@' \
+            -e 's@\(application/x-gnome-saved-search\)=.*@\1=org.gnome.Nautilus.desktop@' \
             /etc/gnome/defaults.list \
             /usr/share/applications/defaults.list || true;
 
@@ -928,10 +928,10 @@ xfce|xubuntu)
             /usr/share/applications/gnome-tweak-tool.desktop || true;
     fi
 
-    if [ -e /usr/share/applications/nautilus.desktop ];
+    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
     then
         desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nautilus.desktop || true;
+            /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
         # Nautilus may be active: kill (will not error if not found)
         if [ "$(pidof nautilus-desktop)" ];
