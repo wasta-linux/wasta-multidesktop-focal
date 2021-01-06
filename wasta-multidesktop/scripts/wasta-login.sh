@@ -933,15 +933,16 @@ xfce|xubuntu)
         desktop-file-edit --set-key=NoDisplay --set-value=true \
             /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
+        # NDM: nautilus-desktop not used in focal.
         # Nautilus may be active: kill (will not error if not found)
-        if [ "$(pidof nautilus-desktop)" ];
-        then
-            if [ $DEBUG ];
-            then
-                echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
-            fi
-            killall nautilus-desktop | tee -a $LOGFILE
-        fi
+        #if [ "$(pidof nautilus-desktop)" ];
+        #then
+        #    if [ $DEBUG ];
+        #    then
+        #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
+        #    fi
+        #    killall nautilus-desktop | tee -a $LOGFILE
+        #fi
     fi
 
     if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
@@ -1135,15 +1136,16 @@ then
         fi
     fi
 
-    if [ -x /usr/bin/nautilus ];
-    then
-        if [ "$(pidof nautilus-desktop)" ];
-        then
-            echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
-        else
-            echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
-        fi
-    fi
+    # NDM: nautilus-desktop not used in focal.
+    #if [ -x /usr/bin/nautilus ];
+    #then
+    #    if [ "$(pidof nautilus-desktop)" ];
+    #    then
+    #        echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
+    #    else
+    #        echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
+    #    fi
+    #fi
 
     echo "final settings:" | tee -a $LOGFILE
 
