@@ -76,6 +76,8 @@
 #   2020-04-28 rik: initial cleanup for focal and xfce
 #   2020-07-30 rik: adding wasta-gnome session compatibility
 #   2020-09-20 rik: correct to thunar.desktop not Thunar.desktop for focal
+#   2021-01-09 ndm: correct nautilus .desktop file name for focal;
+#       also remove calls to nautilus-desktop, which is not used in focal
 #
 # ==============================================================================
 
@@ -472,15 +474,16 @@ cinnamon)
         echo "processing based on CINNAMON session" | tee -a $LOGFILE
     fi
 
+    # NDM: nautilus-desktop not used in focal.
     # Nautilus may be active: kill (will not error if not found)
-    if [ "$(pidof nautilus-desktop)" ];
-    then
-        if [ $DEBUG ];
-        then
-            echo "nautilus running (TOP) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
-        fi
-        killall nautilus-desktop | tee -a $LOGFILE
-    fi
+    #if [ "$(pidof nautilus-desktop)" ];
+    #then
+    #    if [ $DEBUG ];
+    #    then
+    #        echo "nautilus running (TOP) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
+    #    fi
+    #    killall nautilus-desktop | tee -a $LOGFILE
+    #fi
 
     # --------------------------------------------------------------------------
     # CINNAMON Settings
@@ -577,15 +580,16 @@ cinnamon)
         desktop-file-edit --set-key=NoDisplay --set-value=true \
             /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
+        # NDM: nautilus-desktop not used in focal.
         # Nautilus may be active: kill (will not error if not found)
-        if [ "$(pidof nautilus-desktop)" ];
-        then
-            if [ $DEBUG ];
-            then
-                echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
-            fi
-            killall nautilus-desktop | tee -a $LOGFILE
-        fi
+        #if [ "$(pidof nautilus-desktop)" ];
+        #then
+        #    if [ $DEBUG ];
+        #    then
+        #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
+        #    fi
+        #    killall nautilus-desktop | tee -a $LOGFILE
+        #fi
     fi
 
     if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
@@ -770,15 +774,16 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
             /etc/gnome/defaults.list \
             /usr/share/applications/defaults.list || true;
 
+        # NDM: nautilus-desktop not used in focal.
         # Ensure Nautilus Started
-        if ! [ "$(pidof nautilus-desktop)" ];
-        then
-            if [ $DEBUG ];
-            then
-                echo "nautilus not started: attempting to start" | tee -a $LOGFILE
-            fi
-            su "$CURR_USER" -c 'dbus-launch nautilus-desktop &' || true;
-        fi
+        #if ! [ "$(pidof nautilus-desktop)" ];
+        #then
+        #    if [ $DEBUG ];
+        #    then
+        #        echo "nautilus not started: attempting to start" | tee -a $LOGFILE
+        #    fi
+        #    su "$CURR_USER" -c 'dbus-launch nautilus-desktop &' || true;
+        #fi
     fi
 
     if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
