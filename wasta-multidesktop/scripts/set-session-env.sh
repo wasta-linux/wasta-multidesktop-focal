@@ -15,7 +15,7 @@ PREV_SESSION_FILE=''
 PREV_SESSION=''
 
 LOGDIR="/var/log/wasta-multidesktop"
-LOG="${LOGDIR}/$(basename ${0%.*}).log"
+LOG="${LOGDIR}/$(basename ${0%.*}).txt"
 SUPPORTED_DMS="gdm3 lightdm"
 
 log_msg(){
@@ -43,9 +43,7 @@ script_exit(){
     export PREV_SESSION
 
     # Update PREV_SESSION_FILE.
-    if [[ -e $PREV_SESSION_FILE ]]; then
-        echo $CURR_SESSION > $PREV_SESSION_FILE
-    fi
+    echo $CURR_SESSION > $PREV_SESSION_FILE
 
     # Log the output.
     log_msg "display manager: $CURR_DM"
@@ -53,7 +51,7 @@ script_exit(){
     log_msg "current session: $CURR_SESSION"
     log_msg "PREV session for user: $PREV_SESSION"
     log_msg 'debug' "End of $0"
-    exit $1
+    return $1
 }
 
 
