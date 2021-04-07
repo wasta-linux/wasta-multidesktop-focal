@@ -78,7 +78,8 @@
 #   2020-09-20 rik: correct to thunar.desktop not Thunar.desktop for focal
 #   2021-01-09 ndm: correct nautilus .desktop file name for focal;
 #       also remove calls to nautilus-desktop, which is not used in focal
-#   2021-04-07 ndm: reworked to add gdm3 compatibility
+#   2021-04-07 ndm: reworked to add gdm3 compatibility and to streamline
+#       repetitive parts.
 #
 # ==============================================================================
 
@@ -101,6 +102,10 @@ source $DIR/scripts/set-session-env.sh
 #PREV_SESSION_FILE=/var/log/wasta-multidesktop/$CURR_USER-prev-session
 #PREV_SESSION=$(cat $PREV_SESSION_FILE)
 DEBUG_FILE="${LOGDIR}/wasta-login-debug"
+
+# Get DEBUG status.
+touch $DEBUG_FILE
+DEBUG=$(cat $DEBUG_FILE)
 
 CINNAMON_APPS=(
     nemo.desktop
@@ -133,6 +138,21 @@ THUNAR_APPS=(
 # ------------------------------------------------------------------------------
 # Define Functions
 # ------------------------------------------------------------------------------
+
+log_msg() {
+    # Log "debug" messages to the logfile and "info" messages to systemd journal.
+    title='WMD'
+    type='info'
+    if [[ $DEBUG == 'YES' ]]; then
+        type='debug'
+    fi
+    msg="${title}: $@"
+    if [[ $type == 'info' ]]; then
+        echo "$msg"
+    elif [[ $type == 'debug' ]]; then
+        echo "$msg" | tee -a "$LOGFILE"
+    fi
+}
 
 # function: urldecode used to decode gnome picture-uri
 # https://stackoverflow.com/questions/6250698/how-to-decode-url-encoded-string-in-shell
@@ -193,55 +213,66 @@ PID_DBUS=$(pidof dbus-daemon)
 #    # create empty $DEBUG_FILE
 #    touch $DEBUG_FILE
 #fi
-# Get DEBUG status.
-touch $DEBUG_FILE
-DEBUG=$(cat $DEBUG_FILE)
-if [ "$DEBUG" != "YES" ];
+
+## Log intial info if DEBUG set.
+#if [ $DEBUG ];
+#then
+#    echo | tee -a $LOGFILE
+#    echo "$(date) starting wasta-login" | tee -a $LOGFILE
+#    echo "current user: $CURR_USER" | tee -a $LOGFILE
+#    echo "current session: $CURR_SESSION" | tee -a $LOGFILE
+#    echo "PREV session for user: $PREV_SESSION" | tee -a $LOGFILE
+#
+#    if [ -x /usr/bin/nemo ];
+#    then
+#        #echo "TOP NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+#        echo "TOP NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
+#    fi
+#
+#    if [ -x /usr/bin/nautilus ];
+#    then
+#        #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+#        echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+#        #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+#        echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
+#    fi
+#fi
+# Log intial info.
+log_msg
+log_msg "$(date) starting wasta-login"
+log_msg "current user: $CURR_USER"
+log_msg "current session: $CURR_SESSION"
+log_msg "PREV session for user: $PREV_SESSION"
+if [ -x /usr/bin/nemo ];
 then
-    DEBUG=""
+    log_msg "TOP NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)"
 fi
 
-# Log intial info if DEBUG set.
-if [ $DEBUG ];
+if [ -x /usr/bin/nautilus ];
 then
-    echo | tee -a $LOGFILE
-    echo "$(date) starting wasta-login" | tee -a $LOGFILE
-    echo "current user: $CURR_USER" | tee -a $LOGFILE
-    echo "current session: $CURR_SESSION" | tee -a $LOGFILE
-    echo "PREV session for user: $PREV_SESSION" | tee -a $LOGFILE
-
-    if [ -x /usr/bin/nemo ];
-    then
-        #echo "TOP NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
-        echo "TOP NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
-    fi
-
-    if [ -x /usr/bin/nautilus ];
-    then
-        #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-        echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
-        #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
-        echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
-    fi
+    log_msg "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)"
+    log_msg "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)"
 fi
 
 # Check that CURR_USER is set.
 if ! [ $CURR_USER ];
 then
-    if [ $DEBUG ];
-    then
-        echo "EXITING... no user found" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "EXITING... no user found" | tee -a $LOGFILE
+    #fi
+    log_msg "EXITING... no user found"
     exit 0
 fi
 
 # Check that CURR_SESSION is set.
 if ! [ $CURR_SESSION ];
 then
-    if [ $DEBUG ];
-    then
-        echo "EXITING... no session found" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "EXITING... no session found" | tee -a $LOGFILE
+    #fi
+    log_msg "EXITING... no session found"
     exit 0
 fi
 
@@ -249,10 +280,11 @@ fi
 #   logged out xfce session)
 if [ "$(pidof xfconfd)" ];
 then
-    if [ $DEBUG ];
-    then
-        echo "xfconfd is running and is being stopped: $(pidof xfconfd)" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "xfconfd is running and is being stopped: $(pidof xfconfd)" | tee -a $LOGFILE
+    #fi
+    log_msg "xfconfd is running and is being stopped: $(pidof xfconfd)"
     killall xfconfd | tee -a $LOGFILE
 fi
 
@@ -312,10 +344,11 @@ then
     XFCE_DESKTOP="/home/$CURR_USER/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
     if ! [ -e $XFCE_DESKTOP ];
     then
-        if [ $DEBUG ];
-        then
-            echo "Creating xfce4-desktop.xml for user" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "Creating xfce4-desktop.xml for user" | tee -a $LOGFILE
+        #fi
+        log_msg "Creating xfce4-desktop.xml for user"
         mkdir -p $XFCE_SETTINGS/xfconf/xfce-perchannel-xml/
         cp $XFCE_DEFAULT_DESKTOP $XFCE_DESKTOP
     fi
@@ -338,25 +371,31 @@ fi
 # > also done at the end.
 #chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.config/
 
-if [ $DEBUG ];
+#if [ $DEBUG ];
+#then
+if [ -x /usr/bin/cinnamon ];
 then
-    if [ -x /usr/bin/cinnamon ];
-    then
-        echo "cinnamon bg url encoded: $CINNAMON_BG_URL" | tee -a $LOGFILE
-        echo "cinnamon bg url decoded: $CINNAMON_BG" | tee -a $LOGFILE
-    fi
-    if [ -x /usr/bin/xfce4-session ];
-    then
-        echo "xfce bg: $XFCE_BG" | tee -a $LOGFILE
-    fi
-    if [ -x /usr/bin/gnome-shell ];
-    then
-        echo "gnome bg url encoded: $GNOME_BG_URL" | tee -a $LOGFILE
-        echo "gnome bg url decoded: $GNOME_BG" | tee -a $LOGFILE
-    fi
-
-    echo "as bg: $AS_BG" | tee -a $LOGFILE
+    #echo "cinnamon bg url encoded: $CINNAMON_BG_URL" | tee -a $LOGFILE
+    log_msg "cinnamon bg url encoded: $CINNAMON_BG_URL"
+    #echo "cinnamon bg url decoded: $CINNAMON_BG" | tee -a $LOGFILE
+    log_msg "cinnamon bg url decoded: $CINNAMON_BG"
 fi
+if [ -x /usr/bin/xfce4-session ];
+then
+    #echo "xfce bg: $XFCE_BG" | tee -a $LOGFILE
+    log_msg "xfce bg: $XFCE_BG"
+fi
+if [ -x /usr/bin/gnome-shell ];
+then
+    #echo "gnome bg url encoded: $GNOME_BG_URL" | tee -a $LOGFILE
+    log_msg "gnome bg url encoded: $GNOME_BG_URL"
+    #echo "gnome bg url decoded: $GNOME_BG" | tee -a $LOGFILE
+    log_msg "gnome bg url decoded: $GNOME_BG"
+fi
+
+#echo "as bg: $AS_BG" | tee -a $LOGFILE
+log_msg "as bg: $AS_BG"
+#fi
 
 # ------------------------------------------------------------------------------
 # ALL Session Fixes
@@ -429,10 +468,11 @@ case "$PREV_SESSION" in
 
 cinnamon)
     # apply Cinnamon settings to other DEs
-    if [ $DEBUG ];
-    then
-        echo "Previous Session Cinnamon: Sync to other DEs" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Previous Session Cinnamon: Sync to other DEs" | tee -a $LOGFILE
+    #fi
+    log_msg "Previous Session Cinnamon: Sync to other DEs"
 
     if [ -x /usr/bin/gnome-shell ];
     then
@@ -448,10 +488,11 @@ cinnamon)
 
         # sync Cinnamon background to XFCE background
         NEW_XFCE_BG=$(echo "$CINNAMON_BG" | sed "s@'file://@@" | sed "s@'\$@@")
-        if [ $DEBUG ];
-        then
-            echo "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG" | tee -a $LOGFILE
+        #fi
+        log_msg "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG"
         #su "$CURR_USER" -c "dbus-launch xfce4-set-wallpaper $NEW_XFCE_BG" || true;
 
     # ?? why did I have this too? Doesn't sed below work?? maybe not....
@@ -475,10 +516,11 @@ cinnamon)
 
 ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-gnome)
     # apply GNOME settings to other DEs
-    if [ $DEBUG ];
-    then
-        echo "Previous Session GNOME: Sync to other DEs" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Previous Session GNOME: Sync to other DEs" | tee -a $LOGFILE
+    #fi
+    log_msg "Previous Session GNOME: Sync to other DEs"
 
     if [ -x /usr/bin/cinnamon ];
     then
@@ -494,10 +536,11 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
 
         # sync GNOME background to XFCE background
         NEW_XFCE_BG=$(echo "$GNOME_BG" | sed "s@'file://@@" | sed "s@'\$@@")
-        if [ $DEBUG ];
-        then
-            echo "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG" | tee -a $LOGFILE
+        #fi
+        log_msg "Attempting to set NEW_XFCE_BG: $NEW_XFCE_BG"
         #su "$CURR_USER" -c "dbus-launch xfce4-set-wallpaper $NEW_XFCE_BG" || true;
 
     # ?? why did I have this too? Doesn't sed below work?? maybe not....
@@ -523,11 +566,12 @@ xfce|xubuntu)
     #XFCE_BG_URL=$(urlencode $XFCE_BG)
     XFCE_BG_NO_QUOTE=$(echo "$XFCE_BG" | sed "s@'@@g")
 
-    if [ $DEBUG ];
-    then
-        echo "Previous Session XFCE: Sync to other DEs" | tee -a $LOGFILE
-        #echo "xfce bg url: $XFCE_BG_URL" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Previous Session XFCE: Sync to other DEs" | tee -a $LOGFILE
+    #    #echo "xfce bg url: $XFCE_BG_URL" | tee -a $LOGFILE
+    #fi
+    log_msg "Previous Session XFCE: Sync to other DEs"
 
     if [ -x /usr/bin/cinnamon ];
     then
@@ -554,11 +598,13 @@ xfce|xubuntu)
 
 *)
     # $PREV_SESSION unknown
-    if [ $DEBUG ];
-    then
-        echo "Unsupported previous session: $PREV_SESSION" | tee -a $LOGFILE
-        echo "Session NOT sync'd to other sessions" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Unsupported previous session: $PREV_SESSION" | tee -a $LOGFILE
+    #    echo "Session NOT sync'd to other sessions" | tee -a $LOGFILE
+    #fi
+    log_msg "Unsupported previous session: $PREV_SESSION"
+    log_msg "Session NOT sync'd to other sessions"
 ;;
 
 esac
@@ -571,10 +617,11 @@ cinnamon)
     # ==========================================================================
     # ACTIVE SESSION: CINNAMON
     # ==========================================================================
-    if [ $DEBUG ];
-    then
-        echo "processing based on CINNAMON session" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "processing based on CINNAMON session" | tee -a $LOGFILE
+    #fi
+    log_msg "processing based on CINNAMON session"
 
     # NDM: nautilus-desktop not used in focal.
     # Nautilus may be active: kill (will not error if not found)
@@ -591,10 +638,11 @@ cinnamon)
     # CINNAMON Settings
     # --------------------------------------------------------------------------
     # SHOW CINNAMON items
-    if [ $DEBUG ];
-    then
-        echo "Ensuring that Cinnamon apps are visible to the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Ensuring that Cinnamon apps are visible to the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Ensuring that Cinnamon apps are visible to the desktop user"
     toggle_apps_visibility $CINNAMON_APPS 'show'
 
     #if [ -e /usr/share/applications/cinnamon-online-accounts-panel.desktop ];
@@ -635,10 +683,11 @@ cinnamon)
     # ENABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service.disabled ];
     then
-        if [ $DEBUG ];
-        then
-            echo "enabling cinnamon-screensaver for cinnamon session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "enabling cinnamon-screensaver for cinnamon session" | tee -a $LOGFILE
+        #fi
+        log_msg "Enabling cinnamon-screensaver for cinnamon session"
         mv /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service{.disabled,}
     fi
 
@@ -646,10 +695,11 @@ cinnamon)
     # Ubuntu/GNOME Settings
     # --------------------------------------------------------------------------
     # HIDE Ubuntu/GNOME items
-    if [ $DEBUG ];
-    then
-        echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding GNOME apps from the desktop user"
     toggle_apps_visibility $GNOME_APPS 'hide'
 
     #if [ -e /usr/share/applications/alacarte.desktop ];
@@ -733,10 +783,11 @@ cinnamon)
     # ENABLE notify-osd
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service.disabled ];
     then
-        if [ $DEBUG ];
-        then
-            echo "enabling notify-osd for cinnamon session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "enabling notify-osd for cinnamon session" | tee -a $LOGFILE
+        #fi
+        log_msg "Enabling notify-osd for cinnamon session"
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{.disabled,}
     fi
 
@@ -744,10 +795,11 @@ cinnamon)
     # XFCE Settings
     # --------------------------------------------------------------------------
     # Thunar: hide (only installed for bulk-rename-tool)
-    if [ $DEBUG ];
-    then
-        echo "Hiding XFCE apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding XFCE apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding XFCE apps from the desktop user"
     toggle_apps_visibility $THUNAR_APPS 'hide'
     #if [ -e /usr/share/applications/thunar.desktop ];
     #then
@@ -761,22 +813,39 @@ cinnamon)
     #        /usr/share/applications/thunar-settings.desktop || true;
     #fi
 
-    if [ $DEBUG ];
-    then
-        if [ -x /usr/bin/nemo ];
-        then
-            #echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
-            echo "end cinnamon detected - NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
-        fi
+    #if [ $DEBUG ];
+    #then
+    #    if [ -x /usr/bin/nemo ];
+    #    then
+    #        #echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+    #        echo "end cinnamon detected - NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
+    #    fi
+    #
+    #    if [ -x /usr/bin/gnome-shell ];
+    #    then
+    #        #echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+    #        echo "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+    #        #echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+    #        echo "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
+    #    fi
+    #fi
+if [ -x /usr/bin/nemo ];
+then
+    #echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+    #echo "end cinnamon detected - NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
+    log_msg "End cinnamon detected - NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)"
+fi
 
-        if [ -x /usr/bin/gnome-shell ];
-        then
-            #echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-            echo "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
-            #echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
-            echo "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
-        fi
-    fi
+if [ -x /usr/bin/gnome-shell ];
+then
+    #echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+    #echo "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+    log_msg "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)"
+    #echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+    #echo "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
+    log_msg "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)"
+fi
+
 
 # ****BIONIC NOT SURE IF NEEDED
     #again trying to set nemo to draw....
@@ -797,19 +866,21 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # ==========================================================================
     # ACTIVE SESSION: UBUNTU / GNOME
     # ==========================================================================
-    if [ $DEBUG ];
-    then
-        echo "processing based on UBUNTU / GNOME session" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "processing based on UBUNTU / GNOME session" | tee -a $LOGFILE
+    #fi
+    log_msg "Processing based on UBUNTU / GNOME session"
 
     # --------------------------------------------------------------------------
     # CINNAMON Settings
     # --------------------------------------------------------------------------
     # Hide Cinnamon apps from GNOME user.
-    if [ $DEBUG ];
-    then
-        echo "Hiding Cinnamon apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding Cinnamon apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding Cinnamon apps from the desktop user"
     toggle_apps_visibility $CINNAMON_APPS 'hide'
 
     if [ -x /usr/bin/nemo ];
@@ -824,10 +895,11 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
         # Nemo may be active: kill (will not error if not found)
         if [ "$(pidof nemo-desktop)" ];
         then
-            if [ $DEBUG ];
-            then
-                echo "nemo-desktop running (MID) and needs killed: $(pidof nemo-desktop)" | tee -a $LOGFILE
-            fi
+            #if [ $DEBUG ];
+            #then
+            #    echo "nemo-desktop running (MID) and needs killed: $(pidof nemo-desktop)" | tee -a $LOGFILE
+            #fi
+            log_msg "nemo-desktop running (MID) and needs killed: $(pidof nemo-desktop)"
             killall nemo-desktop | tee -a $LOGFILE
         fi
     fi
@@ -847,10 +919,11 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # DISABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service ];
     then
-        if [ $DEBUG ];
-        then
-            echo "disabling cinnamon-screensaver for gnome/ubuntu session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "disabling cinnamon-screensaver for gnome/ubuntu session" | tee -a $LOGFILE
+        #fi
+        log_msg "Disabling cinnamon-screensaver for gnome/ubuntu session"
         mv /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service{,.disabled}
     fi
 
@@ -864,35 +937,39 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     curr_children=$(sudo --user=$CURR_USER gsettings get "$key_path" "$key")
     if [[ $curr_children = "['Utilities', 'YaST']" ]] || \
         [[ $curr_children = "['Utilities', 'Sundry', 'YaST']" ]]; then
-        if [ $DEBUG ];
-        then
-            echo "Resetting gsettings $key_path $key" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "Resetting gsettings $key_path $key" | tee -a $LOGFILE
+        #fi
+        log_msg "Resetting gsettings $key_path $key"
         sudo --user=$CURR_USER --set-home dbus-launch gsettings reset "$key_path" "$key" 2>&1 >/dev/null | tee -a "$LOG"
     fi
 
     # Make adjustments if using lightdm.
     if [[ $CURR_DM == 'lightdm' ]]; then
         if [[ -e /usr/share/dbus-1/services/org.gnome.ScreenSaver.service.disabled ]]; then
-            if [ $DEBUG ];
-            then
-                echo "Enabling gnome-screensaver." | tee -a $LOGFILE
-            fi
+            #if [ $DEBUG ];
+            #then
+            #    echo "Enabling gnome-screensaver." | tee -a $LOGFILE
+            #fi
+            log_msg "Enabling gnome-screensaver for lightdm."
             mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{.disabled,}
         else
             # gnome-screensaver not previously disabled at login.
-            if [ $DEBUG ];
-            then
-                echo "gnome-screensaver already enabled prior to lightdm login." | tee -a $LOGFILE
-            fi
+            #if [ $DEBUG ];
+            #then
+            #    echo "gnome-screensaver already enabled prior to lightdm login." | tee -a $LOGFILE
+            #fi
+            log_msg "gnome-screensaver already enabled prior to lightdm login."
         fi
     fi
 
     # SHOW GNOME Items
-    if [ $DEBUG ];
-    then
-        echo "Setting GNOME apps as visible to the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Setting GNOME apps as visible to the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Setting GNOME apps as visible to the desktop user"
     toggle_apps_visibility $GNOME_APPS 'show'
 
     # SHOW GNOME Items
@@ -972,20 +1049,22 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # ENABLE notify-osd
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service.disabled ];
     then
-        if [ $DEBUG ];
-        then
-            echo "enabling notify-osd for gnome/ubuntu session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "enabling notify-osd for gnome/ubuntu session" | tee -a $LOGFILE
+        #fi
+        log_msg "Enabling notify-osd for gnome/ubuntu session"
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{.disabled,}
     fi
 
     # --------------------------------------------------------------------------
     # XFCE Settings
     # --------------------------------------------------------------------------
-    if [ $DEBUG ];
-    then
-        echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding Thunar apps from the desktop user"
     toggle_apps_visibility $THUNAR_APPS 'hide'
 
     # Thunar: hide (only installed for bulk-rename-tool)
@@ -1006,10 +1085,11 @@ xfce|xubuntu)
     # ==========================================================================
     # ACTIVE SESSION: XFCE
     # ==========================================================================
-    if [ $DEBUG ];
-    then
-        echo "processing based on XFCE session" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "processing based on XFCE session" | tee -a $LOGFILE
+    #fi
+    log_msg "Processing based on XFCE session"
 
     # --------------------------------------------------------------------------
     # CINNAMON Settings
@@ -1018,10 +1098,11 @@ xfce|xubuntu)
     then
         # SHOW XFCE Items
         #   nemo default file manager for wasta-xfce
-        if [ $DEBUG ];
-        then
-            echo "Setting XFCE apps as visible to the desktop user" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "Setting XFCE apps as visible to the desktop user" | tee -a $LOGFILE
+        #fi
+        log_msg "Setting XFCE apps as visible to the desktop user"
         toggle_apps_visibility $XFCE_APPS 'show'
 
         #desktop-file-edit --remove-key=NoDisplay \
@@ -1052,10 +1133,11 @@ xfce|xubuntu)
         if ! [ -e "$NEMO_RESTART" ];
         then
             # create autostart
-            if [ $DEBUG ];
-            then
-                echo "linking nemo-desktop-restart for xfce compatibility" | tee -a $LOGFILE
-            fi
+            #if [ $DEBUG ];
+            #then
+            #    echo "linking nemo-desktop-restart for xfce compatibility" | tee -a $LOGFILE
+            #fi
+            log_msg "Linking nemo-desktop-restart for xfce compatibility"
             su $CURR_USER -c "mkdir -p /home/$CURR_USER/.config/autostart"
             su $CURR_USER -c "ln -s $DIR/resources/nemo-desktop-restart.desktop $NEMO_RESTART"
         fi
@@ -1070,10 +1152,11 @@ xfce|xubuntu)
     # DISABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service ];
     then
-        if [ $DEBUG ];
-        then
-            echo "disabling cinnamon-screensaver for xfce session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "disabling cinnamon-screensaver for xfce session" | tee -a $LOGFILE
+        #fi
+        log_msg "Disabling cinnamon-screensaver for xfce session"
         mv /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service{,.disabled}
     fi
 
@@ -1082,10 +1165,11 @@ xfce|xubuntu)
     # --------------------------------------------------------------------------
 
     # HIDE Ubuntu/GNOME items
-    if [ $DEBUG ];
-    then
-        echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding GNOME apps from the desktop user"
     toggle_apps_visibility $GNOME_APPS 'hide'
 
     #if [ -e /usr/share/applications/alacarte.desktop ];
@@ -1169,10 +1253,11 @@ xfce|xubuntu)
     # DISABLE notify-osd (xfce uses xfce4-notifyd)
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service ];
     then
-        if [ $DEBUG ];
-        then
-            echo "disabling notify-osd for xfce session" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "disabling notify-osd for xfce session" | tee -a $LOGFILE
+        #fi
+        log_msg "Disabling notify-osd for xfce session"
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{,.disabled}
     fi
 
@@ -1180,10 +1265,11 @@ xfce|xubuntu)
     # XFCE Settings
     # --------------------------------------------------------------------------
 
-    if [ $DEBUG ];
-    then
-        echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Hiding Thunar apps from the desktop user"
     toggle_apps_visibility $THUNAR_APPS 'hide'
 
     ## Thunar: hide (only installed for bulk-rename-tool)
@@ -1215,10 +1301,11 @@ xfce|xubuntu)
     if [ "$DESKTOP_STYLE" == "" ];
     then
         # create key
-        if [ $DEBUG ];
-        then
-            echo "creating xfce4-desktop/desktop-icons/style element" | tee -a $LOGFILE
-        fi
+        #if [ $DEBUG ];
+        #then
+        #    echo "creating xfce4-desktop/desktop-icons/style element" | tee -a $LOGFILE
+        #fi
+        log_msg "Creating xfce4-desktop/desktop-icons/style element"
         xmlstarlet ed --inplace \
             -s '//channel[@name="xfce4-desktop"]/property[@name="desktop-icons"]' \
                 -t elem -n "property" -v "" \
@@ -1299,16 +1386,18 @@ xfce|xubuntu)
     # ==========================================================================
     # ACTIVE SESSION: not supported yet
     # ==========================================================================
-    if [ $DEBUG ];
-    then
-        echo "Desktop session not supported: $CURR_SESSION" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Desktop session not supported: $CURR_SESSION" | tee -a $LOGFILE
+    #fi
+    log_msg "Desktop session not supported: $CURR_SESSION"
 
     # Thunar: show (even though only installed for bulk-rename-tool)
-    if [ $DEBUG ];
-    then
-        echo "Setting Thunar apps as visible to the desktop user" | tee -a $LOGFILE
-    fi
+    #if [ $DEBUG ];
+    #then
+    #    echo "Setting Thunar apps as visible to the desktop user" | tee -a $LOGFILE
+    #fi
+    log_msg "Setting Thunar apps as visible to the desktop user"
     toggle_apps_visibility $THUNAR_APPS 'show'
 
     #if [ -e /usr/share/applications/thunar.desktop ];
@@ -1335,71 +1424,81 @@ esac
 # FINISHED
 # ------------------------------------------------------------------------------
 
-if [ $DEBUG ];
+#if [ $DEBUG ];
+#then
+if [ -x /usr/bin/nemo ];
 then
-    if [ -x /usr/bin/nemo ];
+    if [ "$(pidof nemo-desktop)" ];
     then
-        if [ "$(pidof nemo-desktop)" ];
-        then
-            echo "END: nemo-desktop IS running!" | tee -a $LOGFILE
-        else
-            echo "END: nemo-desktop NOT running!" | tee -a $LOGFILE
-        fi
-    fi
-
-    # NDM: nautilus-desktop not used in focal.
-    #if [ -x /usr/bin/nautilus ];
-    #then
-    #    if [ "$(pidof nautilus-desktop)" ];
-    #    then
-    #        echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
-    #    else
-    #        echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
-    #    fi
-    #fi
-
-    echo "final settings:" | tee -a $LOGFILE
-
-    if [ -x /usr/bin/cinnamon ];
-    then
-        #CINNAMON_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.cinnamon.desktop.background picture-uri')
-        CINNAMON_BG_NEW=$(gsettings_get org.cinnamon.desktop.background picture-uri)
-        echo "cinnamon bg NEW: $CINNAMON_BG_NEW" | tee -a $LOGFILE
-    fi
-
-    if [ -x /usr/bin/xfce4-session ];
-    then
-        #XFCE_BG_NEW=$(su "$CURR_USER" -c "dbus-launch xfconf-query -p /backdrop/screen0/monitor0/workspace0/last-image -c xfce4-desktop" || true;)
-        XFCE_BG_NEW=$(xmlstarlet sel -T -t -m \
-            '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
-            -v . -n $XFCE_DESKTOP)
-        echo "xfce bg NEW: $XFCE_BG_NEW" | tee -a $LOGFILE
-    fi
-
-    if [ -x /usr/bin/gnome-shell ];
-    then
-        #GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
-        GNOME_BG_NEW=$(gsettings_get org.gnome.desktop.background picture-uri)
-        echo "gnome bg NEW: $GNOME_BG_NEW" | tee -a $LOGFILE
-    fi
-
-    AS_BG_NEW=$(sed -n "s@BackgroundFile=@@p" "$AS_FILE")
-    echo "as bg NEW: $AS_BG_NEW" | tee -a $LOGFILE
-
-    if [ -x /usr/bin/nemo ];
-    then
-        #echo "NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
-        echo "NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
-    fi
-
-    if [ -x /usr/bin/nautilus ];
-    then
-        #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-        echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
-        #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
-        echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
+        #echo "END: nemo-desktop IS running!" | tee -a $LOGFILE
+        log_msg "END: nemo-desktop IS running!"
+    else
+        #echo "END: nemo-desktop NOT running!" | tee -a $LOGFILE
+        log_msg "END: nemo-desktop NOT running!"
     fi
 fi
+
+# NDM: nautilus-desktop not used in focal.
+#if [ -x /usr/bin/nautilus ];
+#then
+#    if [ "$(pidof nautilus-desktop)" ];
+#    then
+#        echo "END: nautilus-desktop IS running!" | tee -a $LOGFILE
+#    else
+#        echo "END: nautilus-desktop NOT running!" | tee -a $LOGFILE
+#    fi
+#fi
+
+#echo "final settings:" | tee -a $LOGFILE
+log_msg "Final settings:"
+
+if [ -x /usr/bin/cinnamon ];
+then
+    #CINNAMON_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.cinnamon.desktop.background picture-uri')
+    CINNAMON_BG_NEW=$(gsettings_get org.cinnamon.desktop.background picture-uri)
+    #echo "cinnamon bg NEW: $CINNAMON_BG_NEW" | tee -a $LOGFILE
+    log_msg "cinnamon bg NEW: $CINNAMON_BG_NEW"
+fi
+
+if [ -x /usr/bin/xfce4-session ];
+then
+    #XFCE_BG_NEW=$(su "$CURR_USER" -c "dbus-launch xfconf-query -p /backdrop/screen0/monitor0/workspace0/last-image -c xfce4-desktop" || true;)
+    XFCE_BG_NEW=$(xmlstarlet sel -T -t -m \
+        '//channel[@name="xfce4-desktop"]/property[@name="backdrop"]/property[@name="screen0"]/property[@name="monitorVirtual-1"]/property[@name="workspace0"]/property[@name="last-image"]/@value' \
+        -v . -n $XFCE_DESKTOP)
+    #echo "xfce bg NEW: $XFCE_BG_NEW" | tee -a $LOGFILE
+    log_msg "xfce bg NEW: $XFCE_BG_NEW"
+fi
+
+if [ -x /usr/bin/gnome-shell ];
+then
+    #GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
+    GNOME_BG_NEW=$(gsettings_get org.gnome.desktop.background picture-uri)
+    #echo "gnome bg NEW: $GNOME_BG_NEW" | tee -a $LOGFILE
+    log_msg "gnome bg NEW: $GNOME_BG_NEW"
+fi
+
+AS_BG_NEW=$(sed -n "s@BackgroundFile=@@p" "$AS_FILE")
+#echo "as bg NEW: $AS_BG_NEW" | tee -a $LOGFILE
+log_msg "as bg NEW: $AS_BG_NEW"
+
+if [ -x /usr/bin/nemo ];
+then
+    #echo "NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+    #echo "NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
+    log_msg "NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)"
+fi
+
+if [ -x /usr/bin/nautilus ];
+then
+    #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+    #echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+    log_msg "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)"
+    #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+    #echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
+    log_msg "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)"
+fi
+#fi
 
 # Kill dconf processes that were potentially triggered by this script that need
 #   to be restarted in order for changes to take effect: the selected desktop
@@ -1423,15 +1522,21 @@ else
     REMOVE_PID_DBUS=$(echo $END_PID_DBUS | sed -e "s@$PID_DBUS@@")
 fi
 
-if [ $DEBUG ];
-then
-    echo "dconf pid start: $PID_DCONF" | tee -a $LOGFILE
-    echo "dconf pid end: $END_PID_DCONF" | tee -a $LOGFILE
-    echo "dconf pid to kill: $REMOVE_PID_DCONF" | tee -a $LOGFILE
-    echo "dbus pid start: $PID_DBUS" | tee -a $LOGFILE
-    echo "dbus pid end: $END_PID_DBUS" | tee -a $LOGFILE
-    echo "dbus pid to kill: $REMOVE_PID_DBUS" | tee -a $LOGFILE
-fi
+#if [ $DEBUG ];
+#then
+#echo "dconf pid start: $PID_DCONF" | tee -a $LOGFILE
+log_msg "dconf pid start: $PID_DCONF"
+#echo "dconf pid end: $END_PID_DCONF" | tee -a $LOGFILE
+log_msg "dconf pid end: $END_PID_DCONF"
+#echo "dconf pid to kill: $REMOVE_PID_DCONF" | tee -a $LOGFILE
+log_msg "dconf pid to kill: $REMOVE_PID_DCONF"
+#echo "dbus pid start: $PID_DBUS" | tee -a $LOGFILE
+log_msg "dbus pid start: $PID_DBUS"
+#echo "dbus pid end: $END_PID_DBUS" | tee -a $LOGFILE
+log_msg "dbus pid end: $END_PID_DBUS"
+#echo "dbus pid to kill: $REMOVE_PID_DBUS" | tee -a $LOGFILE
+log_msg "dbus pid to kill: $REMOVE_PID_DBUS"
+#fi
 
 kill -9 $REMOVE_PID_DCONF
 kill -9 $REMOVE_PID_DBUS
@@ -1441,9 +1546,10 @@ chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.cache/
 chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.config/
 chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.dbus/
 
-if [ $DEBUG ];
-then
-    echo "$(date) exiting wasta-login" | tee -a $LOGFILE
-fi
+#if [ $DEBUG ];
+#then
+#    echo "$(date) exiting wasta-login" | tee -a $LOGFILE
+#fi
+log_msg "$(date) exiting wasta-login"
 
 exit 0
