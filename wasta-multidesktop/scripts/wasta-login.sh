@@ -78,45 +78,130 @@
 #   2020-09-20 rik: correct to thunar.desktop not Thunar.desktop for focal
 #   2021-01-09 ndm: correct nautilus .desktop file name for focal;
 #       also remove calls to nautilus-desktop, which is not used in focal
+#   2021-04-07 ndm: reworked to add gdm3 compatibility
 #
 # ==============================================================================
+
+DIR=/usr/share/wasta-multidesktop
+LOGDIR=/var/log/wasta-multidesktop
+LOGFILE="${LOGDIR}/wasta-login.txt"
+
+# ENV variables set by DIR/scripts/get-session-info.sh:
+#   - CURR_DM
+#   - CURR_USER
+#   - CURR_SESSION
+#   - PREV_SESSION
+$DIR/scripts/get-session-info.sh
+
+#CURR_USER=$(grep -a "User .* authorized" /var/log/lightdm/lightdm.log | \
+#    tail -1 | sed 's@.*User \(.*\) authorized@\1@')
+#CURR_SESSION=$(grep -a "Greeter requests session" /var/log/lightdm/lightdm.log | \
+#    tail -1 | sed 's@.*Greeter requests session \(.*\)@\1@')
+
+#PREV_SESSION_FILE=/var/log/wasta-multidesktop/$CURR_USER-prev-session
+#PREV_SESSION=$(cat $PREV_SESSION_FILE)
+DEBUG_FILE="${LOGDIR}/wasta-login-debug"
+
+CINNAMON_APPS=(
+    nemo.desktop
+    cinnamon-online-accounts-panel.desktop
+    cinnamon-settings-startup.desktop
+    nemo-compare-preferences.desktop
+)
+
+GNOME_APPS=(
+    alacarte.desktop
+    blueman-manager.desktop
+    gnome-online-accounts-panel.desktop
+    gnome-session-properties.desktop
+    gnome-tweak-tool.desktop
+    org.gnome.Nautilus.desktop
+    nautilus-compare-preferences.desktop
+    software-properties-gnome.desktop
+)
+
+XFCE_APPS=(
+    nemo.desktop
+    nemo-compare-preferences.desktop
+)
+
+THUNAR_APPS=(
+    thunar.desktop
+    thunar-settings.desktop
+)
+
+# ------------------------------------------------------------------------------
+# Define Functions
+# ------------------------------------------------------------------------------
 
 # function: urldecode used to decode gnome picture-uri
 # https://stackoverflow.com/questions/6250698/how-to-decode-url-encoded-string-in-shell
 urldecode(){ : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
+gsettings_get() {
+    # $1 is key_path, $2 is key
+    value=$(sudo --user=$CURR_USER --set-home dbus-launch gsettings get "$1" "$2")
+    #value=$(su $CURR_USER -c "dbus-launch gsettings get $1 $2")
+    echo $value
+}
+
+gsettings_set() {
+    # $1 is key_path, $2 is key, $3 is value
+    sudo --user=$CURR_USER --set-home dbus-launch gsettings set "$1" "$2" "$3" || true;
+    #su "$CURR_USER" -c "dbus-launch gsettings set $1 $2 $3" || true;
+}
+
+toggle_apps_visibility() {
+    # $1 is apps array, $2 is show/hide
+    apps_array=$1
+    visibility=$2
+
+    # Set args.
+    if [[ $visibility == 'show' ]]; then
+        args=" --remove-key=NoDisplay "
+    elif [[ $visibility == 'hide' ]]; then
+        args=" --set-key=NoDisplay --set-value=true "
+    fi
+
+    # Apply to apps list.
+    for app in $apps_array; do
+        if [[ -e /usr/share/applications/$app ]]; then
+            desktop-file-edit $args /usr/share/applications/$app || true;
+        fi
+    done
+}
+
 # ------------------------------------------------------------------------------
 # Initial Setup
 # ------------------------------------------------------------------------------
 
-CURR_USER=$(grep -a "User .* authorized" /var/log/lightdm/lightdm.log | \
-    tail -1 | sed 's@.*User \(.*\) authorized@\1@')
-CURR_SESSION=$(grep -a "Greeter requests session" /var/log/lightdm/lightdm.log | \
-    tail -1 | sed 's@.*Greeter requests session \(.*\)@\1@')
+# Ensure LOGDIR.
+mkdir -p "$LOGDIR"
 
-mkdir -p /var/log/wasta-multidesktop
-LOGFILE=/var/log/wasta-multidesktop/wasta-login.txt
-PREV_SESSION_FILE=/var/log/wasta-multidesktop/$CURR_USER-prev-session
-PREV_SESSION=$(cat $PREV_SESSION_FILE)
-DEBUG_FILE=/var/log/wasta-multidesktop/wasta-login-debug
-
+# Get initial dconf/dbus pids.
 PID_DCONF=$(pidof dconf-service)
 PID_DBUS=$(pidof dbus-daemon)
 
-if [ -e $DEBUG_FILE ];
+#if [ -e $DEBUG_FILE ];
+#then
+#    DEBUG=$(cat $DEBUG_FILE)
+#    if [ "$DEBUG" != "YES" ];
+#    then
+#        DEBUG=""
+#    fi
+#else
+#    # create empty $DEBUG_FILE
+#    touch $DEBUG_FILE
+#fi
+# Get DEBUG status.
+touch $DEBUG_FILE
+DEBUG=$(cat $DEBUG_FILE)
+if [ "$DEBUG" != "YES" ];
 then
-    DEBUG=$(cat $DEBUG_FILE)
-    if [ "$DEBUG" != "YES" ];
-    then
-        DEBUG=""
-    fi
-else
-    # create empty $DEBUG_FILE
-    touch $DEBUG_FILE
+    DEBUG=""
 fi
 
-DIR=/usr/share/wasta-multidesktop
-
+# Log intial info if DEBUG set.
 if [ $DEBUG ];
 then
     echo | tee -a $LOGFILE
@@ -127,16 +212,20 @@ then
 
     if [ -x /usr/bin/nemo ];
     then
-        echo "TOP NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+        #echo "TOP NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+        echo "TOP NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
     fi
 
     if [ -x /usr/bin/nautilus ];
     then
-        echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-        echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+        #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+        echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+        #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+        echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
     fi
 fi
 
+# Check that CURR_USER is set.
 if ! [ $CURR_USER ];
 then
     if [ $DEBUG ];
@@ -146,6 +235,7 @@ then
     exit 0
 fi
 
+# Check that CURR_SESSION is set.
 if ! [ $CURR_SESSION ];
 then
     if [ $DEBUG ];
@@ -173,7 +263,8 @@ if [ -x /usr/bin/cinnamon ];
 then
     #cinnamon: "file://" precedes filename
     #2018-12-18 rik: will do urldecode but not currently necessary for cinnamon
-    CINNAMON_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.cinnamon.desktop.background picture-uri" || true;)
+    #CINNAMON_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.cinnamon.desktop.background picture-uri" || true;)
+    CINNAMON_BG_URL=$(gsettings_get org.cinnamon.desktop.background picture-uri)
     CINNAMON_BG=$(urldecode $CINNAMON_BG_URL)
 fi
 
@@ -183,7 +274,8 @@ then
     #2018-12-18 rik: urldecode necessary for gnome IF picture-uri set in gnome AND
     #   unicode characters present
 
-    GNOME_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.gnome.desktop.background picture-uri" || true;)
+    #GNOME_BG_URL=$(su "$CURR_USER" -c "dbus-launch gsettings get org.gnome.desktop.background picture-uri" || true;)
+    GNOME_BG_URL=$(gsettings_get org.gnome.desktop.background picture-uri)
     GNOME_BG=$(urldecode $GNOME_BG_URL)
 fi
 
@@ -243,7 +335,8 @@ then
 fi
 
 # Ensure all .config files owned by user
-chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.config/
+# > also done at the end.
+#chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.config/
 
 if [ $DEBUG ];
 then
@@ -280,26 +373,31 @@ echo "$DIR/scripts/app-adjustments.sh $*" | at now || true;
 # Ensure Nautilus not showing hidden files (power users may be annoyed)
 if [ -x /usr/bin/nautilus ];
 then
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.nautilus.preferences show-hidden-files false' || true;
+    #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.nautilus.preferences show-hidden-files false' || true;
+    gsettings_set org.gnome.nautilus.preferences show-hidden-files false
 fi
 
 if [ -x /usr/bin/nemo ];
 then
     # Ensure Nemo not showing hidden files (power users may be annoyed)
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.preferences show-hidden-files false' || true;
+    #su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.preferences show-hidden-files false' || true;
+    gsettings_set org.nemo.preferences show-hidden-files false
 
     # Ensure Nemo not showing "location entry" (text entry), but rather "breadcrumbs"
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.preferences show-location-entry false' || true;
+    #su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.preferences show-location-entry false' || true;
+    gsettings_set org.nemo.preferences show-location-entry false
 
     # Ensure Nemo sorting by name
-    su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.preferences default-sort-order 'name'" || true;
+    #su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.preferences default-sort-order 'name'" || true;
+    gsettings_set org.nemo.preferences default-sort-order 'name'
 
     # Ensure Nemo sidebar showing
-    su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.window-state start-with-sidebar true' || true;
+    #su "$CURR_USER" -c 'dbus-launch gsettings set org.nemo.window-state start-with-sidebar true' || true;
+    gsettings_set org.nemo.window-state start-with-sidebar true
 
     # Ensure Nemo sidebar set to 'places'
-    su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.window-state side-pane-view 'places'" || true;
-
+    #su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.window-state side-pane-view 'places'" || true;
+    gsettings_set org.nemo.window-state side-pane-view 'places'
 fi
 
 # copy in zim prefs if don't already exist (these make trayicon work OOTB)
@@ -339,7 +437,8 @@ cinnamon)
     if [ -x /usr/bin/gnome-shell ];
     then
         # sync Cinnamon background to GNOME background
-        su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri $CINNAMON_BG" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri $CINNAMON_BG" || true;
+        gsettings_set org.gnome.desktop.background picture-uri "$CINNAMON_BG"
     fi
 
     if [ -x /usr/bin/xfce4-session ];
@@ -384,7 +483,8 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     if [ -x /usr/bin/cinnamon ];
     then
         # sync GNOME background to Cinnamon background
-        su "$CURR_USER" -c "dbus-launch gsettings set org.cinnamon.desktop.background picture-uri $GNOME_BG" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.cinnamon.desktop.background picture-uri $GNOME_BG" || true;
+        gsettings_set org.cinnamon.desktop.background picture-uri "$GNOME_BG"
     fi
 
     if [ -x /usr/bin/xfce4-session ];
@@ -432,13 +532,15 @@ xfce|xubuntu)
     if [ -x /usr/bin/cinnamon ];
     then
         # sync XFCE background to Cinnamon background
-        su "$CURR_USER" -c "dbus-launch gsettings set org.cinnamon.desktop.background picture-uri 'file://$XFCE_BG_NO_QUOTE'" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.cinnamon.desktop.background picture-uri 'file://$XFCE_BG_NO_QUOTE'" || true;
+        gsettings_set org.cinnamon.desktop.background picture-uri "'file://$XFCE_BG_NO_QUOTE'"
     fi
 
     if [ -x /usr/bin/gnome-shell ];
     then
         # sync XFCE background to GNOME background
-        su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri 'file://$XFCE_BG_NO_QUOTE'" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.gnome.desktop.background picture-uri 'file://$XFCE_BG_NO_QUOTE'" || true;
+        gsettings_set org.gnome.desktop.background picture-uri "'file://$XFCE_BG_NO_QUOTE'"
     fi
 
 # 20.04: I believe XFCE is properly setting AS so not repeating here
@@ -489,26 +591,32 @@ cinnamon)
     # CINNAMON Settings
     # --------------------------------------------------------------------------
     # SHOW CINNAMON items
-
-    if [ -e /usr/share/applications/cinnamon-online-accounts-panel.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/cinnamon-online-accounts-panel.desktop || true;
+        echo "Ensuring that Cinnamon apps are visible to the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $CINNAMON_APPS 'show'
 
-    if [ -e /usr/share/applications/cinnamon-settings-startup.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/cinnamon-settings-startup.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/cinnamon-online-accounts-panel.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/cinnamon-online-accounts-panel.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/cinnamon-settings-startup.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/cinnamon-settings-startup.desktop || true;
+    #fi
 
     if [ -x /usr/bin/nemo ];
     then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nemo.desktop || true;
+        #desktop-file-edit --remove-key=NoDisplay \
+        #    /usr/share/applications/nemo.desktop || true;
 
         # allow nemo to draw the desktop
-        su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'" || true;
+        gsettings_set org.nemo.desktop desktop-layout "'true::false'"
 
         # Ensure Nemo default folder handler
         sed -i \
@@ -518,11 +626,11 @@ cinnamon)
             /usr/share/applications/defaults.list || true;
     fi
 
-    if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nemo-compare-preferences.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/nemo-compare-preferences.desktop || true;
+    #fi
 
     # ENABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service.disabled ];
@@ -538,11 +646,17 @@ cinnamon)
     # Ubuntu/GNOME Settings
     # --------------------------------------------------------------------------
     # HIDE Ubuntu/GNOME items
-    if [ -e /usr/share/applications/alacarte.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/alacarte.desktop || true;
+        echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $GNOME_APPS 'hide'
+
+    #if [ -e /usr/share/applications/alacarte.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/alacarte.desktop || true;
+    #fi
 
     # Blueman-applet may be active: kill (will not error if not found)
     if [ "$(pgrep blueman-applet)" ];
@@ -550,53 +664,53 @@ cinnamon)
         killall blueman-applet | tee -a $LOGFILE
     fi
 
-    if [ -e /usr/share/applications/blueman-manager.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/blueman-manager.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-online-accounts-panel.desktop || true;
-    fi
-
+    #if [ -e /usr/share/applications/blueman-manager.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/blueman-manager.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-online-accounts-panel.desktop || true;
+    #fi
+    #
     # Gnome Startup Applications
-    if [ -e /usr/share/applications/gnome-session-properties.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-session-properties.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-tweak-tool.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/org.gnome.Nautilus.desktop || true;
-
-        # NDM: nautilus-desktop not used in focal.
-        # Nautilus may be active: kill (will not error if not found)
-        #if [ "$(pidof nautilus-desktop)" ];
-        #then
-        #    if [ $DEBUG ];
-        #    then
-        #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
-        #    fi
-        #    killall nautilus-desktop | tee -a $LOGFILE
-        #fi
-    fi
-
-    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/org.gnome.Nautilus.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/gnome-session-properties.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-session-properties.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-tweak-tool.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/org.gnome.Nautilus.desktop || true;
+    #
+    #    # NDM: nautilus-desktop not used in focal.
+    #    # Nautilus may be active: kill (will not error if not found)
+    #    #if [ "$(pidof nautilus-desktop)" ];
+    #    #then
+    #    #    if [ $DEBUG ];
+    #    #    then
+    #    #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
+    #    #    fi
+    #    #    killall nautilus-desktop | tee -a $LOGFILE
+    #    #fi
+    #fi
+    #
+    #if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/org.gnome.Nautilus.desktop || true;
+    #fi
 
     # Prevent Gnome from drawing the desktop (for Xubuntu, Nautilus is not
     #   installed but these settings were still true, thus not allowing nemo
@@ -604,15 +718,17 @@ cinnamon)
     #   installed.
     if [ -x /usr/bin/gnome-shell ];
     then
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
+        gsettings_set org.gnome.desktop.background show-desktop-icons false
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+        gsettings_set org.gnome.desktop.background draw-background false
     fi
 
-    if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nautilus-compare-preferences.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/nautilus-compare-preferences.desktop || true;
+    #fi
 
     # ENABLE notify-osd
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service.disabled ];
@@ -628,29 +744,37 @@ cinnamon)
     # XFCE Settings
     # --------------------------------------------------------------------------
     # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/thunar.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar.desktop || true;
+        echo "Hiding XFCE apps from the desktop user" | tee -a $LOGFILE
     fi
-
-    if [ -e /usr/share/applications/thunar-settings.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar-settings.desktop || true;
-    fi
+    toggle_apps_visibility $THUNAR_APPS 'hide'
+    #if [ -e /usr/share/applications/thunar.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/thunar-settings.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar-settings.desktop || true;
+    #fi
 
     if [ $DEBUG ];
     then
         if [ -x /usr/bin/nemo ];
         then
-            echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+            #echo "end cinnamon detected - NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+            echo "end cinnamon detected - NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
         fi
 
         if [ -x /usr/bin/gnome-shell ];
         then
-            echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-            echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+            #echo "end cinnamon detected - NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+            echo "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+            #echo "end cinnamon detected - NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+            echo "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
         fi
     fi
 
@@ -681,15 +805,22 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # --------------------------------------------------------------------------
     # CINNAMON Settings
     # --------------------------------------------------------------------------
+    # Hide Cinnamon apps from GNOME user.
+    if [ $DEBUG ];
+    then
+        echo "Hiding Cinnamon apps from the desktop user" | tee -a $LOGFILE
+    fi
+    toggle_apps_visibility $CINNAMON_APPS 'hide'
+
     if [ -x /usr/bin/nemo ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nemo.desktop || true;
-
-        # ****BIONIC: don't think necessary (nemo-desktop now handles desktop)
-        # prevent nemo from drawing the desktop
-        # su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'"
-
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/nemo.desktop || true;
+    #
+    #    # ****BIONIC: don't think necessary (nemo-desktop now handles desktop)
+    #    # prevent nemo from drawing the desktop
+    #    # su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'"
+    #
         # Nemo may be active: kill (will not error if not found)
         if [ "$(pidof nemo-desktop)" ];
         then
@@ -701,17 +832,17 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
         fi
     fi
 
-    if [ -e /usr/share/applications/cinnamon-online-accounts-panel.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/cinnamon-online-accounts-panel.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nemo-compare-preferences.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/cinnamon-online-accounts-panel.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/cinnamon-online-accounts-panel.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/nemo-compare-preferences.desktop || true;
+    #fi
 
     # DISABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service ];
@@ -726,46 +857,86 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # --------------------------------------------------------------------------
     # Ubuntu/GNOME Settings
     # --------------------------------------------------------------------------
+
+    # Reset ...app-folders folder-children if it's currently set as ['Utilities', 'YaST']
+    key_path='org.gnome.desktop.app-folders'
+    key='folder-children'
+    curr_children=$(sudo --user=$CURR_USER gsettings get "$key_path" "$key")
+    if [[ $curr_children = "['Utilities', 'YaST']" ]] || \
+        [[ $curr_children = "['Utilities', 'Sundry', 'YaST']" ]]; then
+        if [ $DEBUG ];
+        then
+            echo "Resetting gsettings $key_path $key" | tee -a $LOGFILE
+        fi
+        sudo --user=$CURR_USER --set-home dbus-launch gsettings reset "$key_path" "$key" 2>&1 >/dev/null | tee -a "$LOG"
+    fi
+
+    # Make adjustments if using lightdm.
+    if [[ $CURR_DM == 'lightdm' ]]; then
+        if [[ -e /usr/share/dbus-1/services/org.gnome.ScreenSaver.service.disabled ]]; then
+            if [ $DEBUG ];
+            then
+                echo "Enabling gnome-screensaver." | tee -a $LOGFILE
+            fi
+            mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{.disabled,}
+        else
+            # gnome-screensaver not previously disabled at login.
+            if [ $DEBUG ];
+            then
+                echo "gnome-screensaver already enabled prior to lightdm login." | tee -a $LOGFILE
+            fi
+        fi
+    fi
+
     # SHOW GNOME Items
-    if [ -e /usr/share/applications/alacarte.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/alacarte.desktop || true;
+        echo "Setting GNOME apps as visible to the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $GNOME_APPS 'show'
 
-    if [ -e /usr/share/applications/blueman-manager.desktop ];
-    then
-        desktop-file-edit -remove-key=NoDisplay \
-            /usr/share/applications/blueman-manager.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/gnome-online-accounts-panel.desktop || true;
-    fi
-
-    # Gnome Startup Applications
-    if [ -e /usr/share/applications/gnome-session-properties.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/gnome-session-properties.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/gnome-tweak-tool.desktop || true;
-    fi
+    # SHOW GNOME Items
+    #if [ -e /usr/share/applications/alacarte.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/alacarte.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/blueman-manager.desktop ];
+    #then
+    #    desktop-file-edit -remove-key=NoDisplay \
+    #        /usr/share/applications/blueman-manager.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/gnome-online-accounts-panel.desktop || true;
+    #fi
+    #
+    ## Gnome Startup Applications
+    #if [ -e /usr/share/applications/gnome-session-properties.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/gnome-session-properties.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/gnome-tweak-tool.desktop || true;
+    #fi
 
     if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
     then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/org.gnome.Nautilus.desktop || true;
+        #desktop-file-edit --remove-key=NoDisplay \
+        #    /usr/share/applications/org.gnome.Nautilus.desktop || true;
 
         # Allow Nautilus to draw the desktop
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons true' || true;
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background true' || true;
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons true' || true;
+        gsettings_set org.gnome.desktop.background show-desktop-icons true
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background true' || true;
+        gsettings_set org.gnome.desktop.background draw-background true
 
         # Ensure Nautilus default folder handler
         sed -i \
@@ -786,17 +957,17 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
         #fi
     fi
 
-    if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nautilus-compare-preferences.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/software-properties-gnome.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/software-properties-gnome.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/nautilus-compare-preferences.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/software-properties-gnome.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/software-properties-gnome.desktop || true;
+    #fi
 
     # ENABLE notify-osd
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service.disabled ];
@@ -811,18 +982,24 @@ ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-g
     # --------------------------------------------------------------------------
     # XFCE Settings
     # --------------------------------------------------------------------------
-    # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/thunar.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar.desktop || true;
+        echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $THUNAR_APPS 'hide'
 
-    if [ -e /usr/share/applications/thunar-settings.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar-settings.desktop || true;
-    fi
+    # Thunar: hide (only installed for bulk-rename-tool)
+    #if [ -e /usr/share/applications/thunar.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/thunar-settings.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar-settings.desktop || true;
+    #fi
 ;;
 
 xfce|xubuntu)
@@ -839,15 +1016,24 @@ xfce|xubuntu)
     # --------------------------------------------------------------------------
     if [ -x /usr/bin/nemo ];
     then
-        # nemo default file manager for wasta-xfce
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nemo.desktop || true;
+        # SHOW XFCE Items
+        #   nemo default file manager for wasta-xfce
+        if [ $DEBUG ];
+        then
+            echo "Setting XFCE apps as visible to the desktop user" | tee -a $LOGFILE
+        fi
+        toggle_apps_visibility $XFCE_APPS 'show'
+
+        #desktop-file-edit --remove-key=NoDisplay \
+        #    /usr/share/applications/nemo.desktop || true;
 
         # set nemo to draw the desktop
-        su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop desktop-layout 'true::false'" || true;
+        gsettings_set org.nemo.desktop desktop-layout "'true::false'"
 
         # ensure nemo can start if xfdesktop already running
-        su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop ignored-desktop-handlers \"['conky', 'xfdesktop']\"" || true;
+        #su "$CURR_USER" -c "dbus-launch gsettings set org.nemo.desktop ignored-desktop-handlers \"['conky', 'xfdesktop']\"" || true;
+        gsettings_set org.nemo.desktop ignored-desktop-handlers \"['conky', 'xfdesktop']\"
 
         # Ensure Nemo default folder handler
         sed -i \
@@ -875,11 +1061,11 @@ xfce|xubuntu)
         fi
     fi
 
-    if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
-    then
-        desktop-file-edit --remove-key=NoDisplay \
-            /usr/share/applications/nemo-compare-preferences.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/nemo-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --remove-key=NoDisplay \
+    #        /usr/share/applications/nemo-compare-preferences.desktop || true;
+    #fi
 
     # DISABLE cinnamon-screensaver
     if [ -e /usr/share/dbus-1/services/org.cinnamon.ScreenSaver.service ];
@@ -896,11 +1082,17 @@ xfce|xubuntu)
     # --------------------------------------------------------------------------
 
     # HIDE Ubuntu/GNOME items
-    if [ -e /usr/share/applications/alacarte.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/alacarte.desktop || true;
+        echo "Hiding GNOME apps from the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $GNOME_APPS 'hide'
+
+    #if [ -e /usr/share/applications/alacarte.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/alacarte.desktop || true;
+    #fi
 
     # Blueman-applet may be active: kill (will not error if not found)
     if [ "$(pgrep blueman-applet)" ];
@@ -908,59 +1100,59 @@ xfce|xubuntu)
         killall blueman-applet | tee -a $LOGFILE
     fi
 
-    if [ -e /usr/share/applications/blueman-manager.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/blueman-manager.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/blueman-manager.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/blueman-manager.desktop || true;
+    #fi
 
-    if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-online-accounts-panel.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/gnome-online-accounts-panel.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-online-accounts-panel.desktop || true;
+    #fi
 
     # Gnome Startup Applications
-    if [ -e /usr/share/applications/gnome-session-properties.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-session-properties.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/gnome-tweak-tool.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/org.gnome.Nautilus.desktop || true;
-
-        # NDM: nautilus-desktop not used in focal.
-        # Nautilus may be active: kill (will not error if not found)
-        #if [ "$(pidof nautilus-desktop)" ];
-        #then
-        #    if [ $DEBUG ];
-        #    then
-        #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
-        #    fi
-        #    killall nautilus-desktop | tee -a $LOGFILE
-        #fi
-    fi
-
-    if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/org.gnome.Nautilus.desktop || true;
-    fi
-
-    if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/nautilus-compare-preferences.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/gnome-session-properties.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-session-properties.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/gnome-tweak-tool.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/gnome-tweak-tool.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/org.gnome.Nautilus.desktop || true;
+    #
+    #    # NDM: nautilus-desktop not used in focal.
+    #    # Nautilus may be active: kill (will not error if not found)
+    #    #if [ "$(pidof nautilus-desktop)" ];
+    #    #then
+    #    #    if [ $DEBUG ];
+    #    #    then
+    #    #        echo "nautilus running (MID) and needs killed: $(pidof nautilus-desktop)" | tee -a $LOGFILE
+    #    #    fi
+    #    #    killall nautilus-desktop | tee -a $LOGFILE
+    #    #fi
+    #fi
+    #
+    #if [ -e /usr/share/applications/org.gnome.Nautilus.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/org.gnome.Nautilus.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/nautilus-compare-preferences.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/nautilus-compare-preferences.desktop || true;
+    #fi
 
     # Prevent Gnome from drawing the desktop (for Xubuntu, Nautilus is not
     #   installed but these settings were still true, thus not allowing nemo
@@ -968,8 +1160,10 @@ xfce|xubuntu)
     #   installed.
     if [ -x /usr/bin/gnome-shell ];
     then
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
-        su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background show-desktop-icons false' || true;
+        gsettings_set org.gnome.desktop.background show-desktop-icons false
+        #su "$CURR_USER" -c 'dbus-launch gsettings set org.gnome.desktop.background draw-background false' || true;
+        gsettings_set org.gnome.desktop.background draw-background false
     fi
 
     # DISABLE notify-osd (xfce uses xfce4-notifyd)
@@ -986,18 +1180,24 @@ xfce|xubuntu)
     # XFCE Settings
     # --------------------------------------------------------------------------
 
-    # Thunar: hide (only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/thunar.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar.desktop || true;
+        echo "Hiding Thunar apps from the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $THUNAR_APPS 'hide'
 
-    if [ -e /usr/share/applications/thunar-settings.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=true \
-            /usr/share/applications/thunar-settings.desktop || true;
-    fi
+    ## Thunar: hide (only installed for bulk-rename-tool)
+    #if [ -e /usr/share/applications/thunar.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/thunar-settings.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=true \
+    #        /usr/share/applications/thunar-settings.desktop || true;
+    #fi
 
     # xfdesktop used for background but does NOT draw desktop icons
     # (app-adjustments adds XFCE to OnlyShowIn to trigger nemo-desktop)
@@ -1101,21 +1301,27 @@ xfce|xubuntu)
     # ==========================================================================
     if [ $DEBUG ];
     then
-        echo "desktop session not supported" | tee -a $LOGFILE
+        echo "Desktop session not supported: $CURR_SESSION" | tee -a $LOGFILE
     fi
 
     # Thunar: show (even though only installed for bulk-rename-tool)
-    if [ -e /usr/share/applications/thunar.desktop ];
+    if [ $DEBUG ];
     then
-        desktop-file-edit --set-key=NoDisplay --set-value=false \
-            /usr/share/applications/thunar.desktop || true;
+        echo "Setting Thunar apps as visible to the desktop user" | tee -a $LOGFILE
     fi
+    toggle_apps_visibility $THUNAR_APPS 'show'
 
-    if [ -e /usr/share/applications/thunar-settings.desktop ];
-    then
-        desktop-file-edit --set-key=NoDisplay --set-value=false \
-            /usr/share/applications/thunar-settings.desktop || true;
-    fi
+    #if [ -e /usr/share/applications/thunar.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=false \
+    #        /usr/share/applications/thunar.desktop || true;
+    #fi
+    #
+    #if [ -e /usr/share/applications/thunar-settings.desktop ];
+    #then
+    #    desktop-file-edit --set-key=NoDisplay --set-value=false \
+    #        /usr/share/applications/thunar-settings.desktop || true;
+    #fi
 ;;
 
 esac
@@ -1123,7 +1329,7 @@ esac
 # ------------------------------------------------------------------------------
 # SET PREV Session file for user
 # ------------------------------------------------------------------------------
-echo $CURR_SESSION > $PREV_SESSION_FILE
+#echo $CURR_SESSION > $PREV_SESSION_FILE
 
 # ------------------------------------------------------------------------------
 # FINISHED
@@ -1156,7 +1362,8 @@ then
 
     if [ -x /usr/bin/cinnamon ];
     then
-        CINNAMON_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.cinnamon.desktop.background picture-uri')
+        #CINNAMON_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.cinnamon.desktop.background picture-uri')
+        CINNAMON_BG_NEW=$(gsettings_get org.cinnamon.desktop.background picture-uri)
         echo "cinnamon bg NEW: $CINNAMON_BG_NEW" | tee -a $LOGFILE
     fi
 
@@ -1171,7 +1378,8 @@ then
 
     if [ -x /usr/bin/gnome-shell ];
     then
-        GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
+        #GNOME_BG_NEW=$(su "$CURR_USER" -c 'dbus-launch gsettings get org.gnome.desktop.background picture-uri')
+        GNOME_BG_NEW=$(gsettings_get org.gnome.desktop.background picture-uri)
         echo "gnome bg NEW: $GNOME_BG_NEW" | tee -a $LOGFILE
     fi
 
@@ -1180,13 +1388,16 @@ then
 
     if [ -x /usr/bin/nemo ];
     then
-        echo "NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+        #echo "NEMO show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.nemo.desktop desktop-layout')" | tee -a $LOGFILE
+        echo "NEMO show desktop icons: $(gsettings_get org.nemo.desktop desktop-layout)" | tee -a $LOGFILE
     fi
 
     if [ -x /usr/bin/nautilus ];
     then
-        echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
-        echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+        #echo "NAUTILUS show desktop icons: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background show-desktop-icons')" | tee -a $LOGFILE
+        echo "NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)" | tee -a $LOGFILE
+        #echo "NAUTILUS draw background: $(su $CURR_USER -c 'dbus-launch gsettings get org.gnome.desktop.background draw-background')" | tee -a $LOGFILE
+        echo "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)" | tee -a $LOGFILE
     fi
 fi
 
