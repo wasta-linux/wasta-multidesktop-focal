@@ -91,7 +91,7 @@ LOGFILE="${LOGDIR}/wasta-login.txt"
 #   - CURR_USER
 #   - CURR_SESSION
 #   - PREV_SESSION
-$DIR/scripts/get-session-info.sh
+source $DIR/scripts/set-session-env.sh
 
 #CURR_USER=$(grep -a "User .* authorized" /var/log/lightdm/lightdm.log | \
 #    tail -1 | sed 's@.*User \(.*\) authorized@\1@')
