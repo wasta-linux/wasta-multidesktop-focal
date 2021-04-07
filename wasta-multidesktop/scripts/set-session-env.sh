@@ -15,22 +15,25 @@ PREV_SESSION_FILE=''
 PREV_SESSION=''
 
 LOGDIR="/var/log/wasta-multidesktop"
-LOG="${LOGDIR}/$(basename ${0%.*}).txt"
+LOG="${LOGDIR}/wasta-login.txt"
+DEBUG_FILE="${LOGDIR}/wasta-login-debug"
+# Get DEBUG status.
+touch $DEBUG_FILE
+DEBUG=$(cat $DEBUG_FILE)
+
 SUPPORTED_DMS="gdm3 lightdm"
 
-log_msg(){
-    # Log "info" messages to the logfile and "debug" messages to systemd journal.
-    title='WMD-session-info'
+log_msg() {
+    # Log "debug" messages to the logfile and "info" messages to systemd journal.
+    title='WMD-env'
     type='info'
-    if [[ $1 == 'debug' ]]; then
+    if [[ $DEBUG == 'YES' ]]; then
         type='debug'
-        title='WMD-session-info-DEBUG'
-        shift
     fi
     msg="${title}: $@"
-    if [[ $type == 'debug' ]]; then
+    if [[ $type == 'info' ]]; then
         echo "$msg"
-    elif [[ $type == 'info' ]]; then
+    elif [[ $type == 'debug' ]]; then
         echo "$msg" | tee -a "$LOG"
     fi
 }
