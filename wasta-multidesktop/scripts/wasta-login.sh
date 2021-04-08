@@ -87,7 +87,7 @@ DIR=/usr/share/wasta-multidesktop
 LOGDIR=/var/log/wasta-multidesktop
 LOGFILE="${LOGDIR}/wasta-login.txt"
 
-# ENV variables set by DIR/scripts/get-session-info.sh:
+# ENV variables set by DIR/scripts/set-session-env.sh:
 #   - CURR_DM
 #   - CURR_USER
 #   - CURR_SESSION
