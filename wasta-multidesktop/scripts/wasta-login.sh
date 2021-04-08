@@ -92,6 +92,9 @@ LOGFILE="${LOGDIR}/wasta-login.txt"
 #   - CURR_USER
 #   - CURR_SESSION
 #   - PREV_SESSION
+# The script is sourced so that it can properly export the variables. Otherwise,
+#   wasta-login.sh would have to not be run until set-session-env.sh is finished.
+#   This also means that this script can't "exit", it must "return" instead.
 source $DIR/scripts/set-session-env.sh
 
 
@@ -200,7 +203,7 @@ mkdir -p "$LOGDIR"
 PID_DCONF=$(pidof dconf-service)
 PID_DBUS=$(pidof dbus-daemon)
 
-# Log intial info.
+# Log initial info.
 log_msg
 log_msg "$(date) starting wasta-login"
 log_msg "display manager: $CURR_DM"
