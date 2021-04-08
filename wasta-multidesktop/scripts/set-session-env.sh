@@ -32,13 +32,14 @@ log_msg() {
     fi
     msg="${title}: $@"
     if [[ $type == 'info' ]]; then
-        echo "$msg"
+        #echo "$msg"
+        true
     elif [[ $type == 'debug' ]]; then
         echo "$msg" | tee -a "$LOG"
     fi
 }
 
-script_exit(){
+script_exit() {
     # Export variables.
     export CURR_DM
     export CURR_USER
@@ -48,12 +49,6 @@ script_exit(){
     # Update PREV_SESSION_FILE.
     echo $CURR_SESSION > $PREV_SESSION_FILE
 
-    # Log the output.
-    log_msg "display manager: $CURR_DM"
-    log_msg "current user: $CURR_USER"
-    log_msg "current session: $CURR_SESSION"
-    log_msg "PREV session for user: $PREV_SESSION"
-    log_msg 'debug' "End of $0"
     return $1
 }
 
@@ -64,7 +59,6 @@ script_exit(){
 
 mkdir -p '/var/log/wasta-multidesktop'
 touch "$LOG"
-log_msg 'debug' "Start of $0"
 
 # Determine display manager.
 curr_dm=$(systemctl status display-manager.service | grep 'Main PID:' | awk -F'(' '{print $2}')
