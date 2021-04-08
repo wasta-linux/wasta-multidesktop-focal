@@ -550,6 +550,12 @@ cinnamon)
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{.disabled,}
     fi
 
+    # DISABLE gnome-screensaver.
+    if [[ -e /usr/share/dbus-1/services/org.gnome.ScreenSaver.service ]]; then
+        log_msg "Disabling gnome-screensaver for cinnamon session"
+        mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{,.disabled}
+    fi
+
     # --------------------------------------------------------------------------
     # XFCE Settings
     # --------------------------------------------------------------------------
@@ -567,7 +573,7 @@ cinnamon)
     fi
 ;;
 
-ubuntu|ubuntu-xorg|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-gnome)
+ubuntu|ubuntu-xorg|ubuntu-wayland|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-gnome)
     # ==========================================================================
     # ACTIVE SESSION: UBUNTU / GNOME
     # ==========================================================================
@@ -724,6 +730,12 @@ xfce|xubuntu)
     if [ -e /usr/share/dbus-1/services/org.freedesktop.Notifications.service ]; then
         log_msg "Disabling notify-osd for xfce session"
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{,.disabled}
+    fi
+
+    # DISABLE gnome-screensaver.
+    if [[ -e /usr/share/dbus-1/services/org.gnome.ScreenSaver.service ]]; then
+        log_msg "Disabling gnome-screensaver for cinnamon session"
+        mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{,.disabled}
     fi
 
     # --------------------------------------------------------------------------
