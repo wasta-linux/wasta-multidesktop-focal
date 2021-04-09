@@ -160,7 +160,11 @@ urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 gsettings_get() {
     # $1: key_path
     # $2: key
+    # NOTE: There's a security benefit of using sudo or runuser instead of su.
+    #   su adds the user's entire environment, while sudo --set-home and runuser
+    #   only set LOGNAME, USER, and HOME (sudo also sets MAIL) to match the user's.
     value=$(sudo --user=$CURR_USER --set-home dbus-launch gsettings get "$1" "$2")
+    #value=$(/usr/sbin/runuser -u $CURR_USER -- dbus-launch gsettings get "$1" "$2")
     #value=$(su $CURR_USER -c "dbus-launch gsettings get $1 $2")
     echo $value
 }
@@ -170,6 +174,7 @@ gsettings_set() {
     # $2: key
     # $3: value
     sudo --user=$CURR_USER --set-home dbus-launch gsettings set "$1" "$2" "$3" || true;
+    #/usr/sbin/runuser -u $CURR_USER -- dbus-launch gsettings set "$1" "$2" "$3" || true;
     #su "$CURR_USER" -c "dbus-launch gsettings set $1 $2 $3" || true;
 }
 
@@ -571,6 +576,11 @@ cinnamon)
         log_msg "end cinnamon detected - NAUTILUS show desktop icons: $(gsettings_get org.gnome.desktop.background show-desktop-icons)"
         log_msg "end cinnamon detected - NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)"
     fi
+
+    # Stop xfce4-notifyd.service.
+    # su $CURR_USER -c "dbus-launch systemctl --user disable xfce4-notifyd.service"
+    # 2021-04-09: This doesn't work (also tried sudo, runuser, in addidtion to su):
+    # "Failed to disable unit xfce4-notifyd.service: Process org.freedesktop.systemd1 exited with status 1"
 ;;
 
 ubuntu|ubuntu-xorg|ubuntu-wayland|gnome|gnome-flashback-metacity|gnome-flashback-compiz|wasta-gnome)
