@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (1.1.0) focal; urgency=medium
+
+  * Add support for gdm3
+  * Enhance logging
+
+ -- Nate Marti <nate_marti@sil.org>  Thu, 23 Sep 2021 19:25:23 +0100
+
 wasta-multidesktop-focal (1.0.12) focal; urgency=medium
 
   * wasta-login.sh: remove references to nautilus-desktop
