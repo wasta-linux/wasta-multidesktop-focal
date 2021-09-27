@@ -387,7 +387,7 @@ fi
 # --------------------------------------------------------------------------
 case "$PREV_SESSION" in
 
-cinnamon)
+cinnamon|cinnamon2d)
     # apply Cinnamon settings to other DEs
     log_msg "Previous Session Cinnamon: Sync to other DEs"
 
@@ -497,7 +497,7 @@ esac
 # Processing based on current session
 # ------------------------------------------------------------------------------
 case "$CURR_SESSION" in
-cinnamon)
+cinnamon|cinnamon2d)
     # ==========================================================================
     # ACTIVE SESSION: CINNAMON
     # ==========================================================================
