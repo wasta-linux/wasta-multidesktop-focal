@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (1.1.2) focal; urgency=medium
+
+  * wasta-login.sh: cleanup detection of dconf and dbus PIDs needing
+    to be killed. Thanks to ndm for digging in and solving this one!
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Mon, 06 Dec 2021 08:35:18 -0600
+
 wasta-multidesktop-focal (1.1.1) focal; urgency=medium
 
   * Add support for cinnamon2d session

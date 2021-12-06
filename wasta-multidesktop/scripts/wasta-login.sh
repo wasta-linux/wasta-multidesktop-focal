@@ -80,6 +80,12 @@
 #       also remove calls to nautilus-desktop, which is not used in focal
 #   2021-04-07 ndm: reworked to add gdm3 compatibility and to streamline
 #       repetitive parts.
+#   2021-12-06 rik: thanks to ndm for cleaning up the detection of which dconf
+#       and dbus PIDs need killing at the end. Dennis Pepler was having
+#       things like bluetooth and network-manager killed since there were
+#       problems with his AccountsService file causing lots of time delays then
+#       resulting in some processes ending meaning the detection of pids needing
+#       to NOT be killed wasn't working as expected.
 #
 # ==============================================================================
 
@@ -910,25 +916,22 @@ if [ -x /usr/bin/nautilus ]; then
     log_msg "NAUTILUS draw background: $(gsettings_get org.gnome.desktop.background draw-background)"
 fi
 
-# Kill dconf processes that were potentially triggered by this script that need
-#   to be restarted in order for changes to take effect: the selected desktop
-#   will restart what is needed.
-#killall dconf-service
-END_PID_DCONF=$(pidof dconf-service)
-if ! [ "$PID_DCONF" ]; then
-    # no previous DCONF pid so remove all current
-    REMOVE_PID_DCONF=$END_PID_DCONF
-else
-    REMOVE_PID_DCONF=$(echo $END_PID_DCONF | sed -e "s@$PID_DCONF@@")
-fi
+# Kill dconf and dbus processes that were started during this script: often
+#   they are not getting cleaned up leaving several "orphaned" processes. It
+#   isn't terrible to keep them running but is more of a "housekeeping" item.
+
+REMOVE_PID_DCONF=$END_PID_DCONF
+# thanks to nate marti for cleaning up this detection of which PIDs need killing
+for p in $PID_DCONF; do
+    REMOVE_PID_DCONF=$(echo $REMOVE_PID_DCONF | sed "s/$p//")
+done
 
 END_PID_DBUS=$(pidof dbus-daemon)
-if ! [ "$PID_DBUS" ]; then
-    # no previous DBUS pid so remove all current
-    REMOVE_PID_DBUS=$END_PID_DBUS
-else
-    REMOVE_PID_DBUS=$(echo $END_PID_DBUS | sed -e "s@$PID_DBUS@@")
-fi
+REMOVE_PID_DBUS=$END_PID_DBUS
+# thanks to nate marti for cleaning up this detection of which PIDs need killing
+for p in $PID_DBUS; do
+    REMOVE_PID_DBUS=$(echo $REMOVE_PID_DBUS | sed "s/$p//")
+done
 
 log_msg "dconf pid start: $PID_DCONF"
 log_msg "dconf pid end: $END_PID_DCONF"
