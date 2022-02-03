@@ -86,6 +86,11 @@
 #       problems with his AccountsService file causing lots of time delays then
 #       resulting in some processes ending meaning the detection of pids needing
 #       to NOT be killed wasn't working as expected.
+#   2022-02-03 rik: Dennis Pepler's problem was caused by a space in filenames
+#       used as backgrounds caused a bad grep and was then inserting duplicate
+#       lines in the user's AccountsService file. Fixed by grepping "-o" to
+#       only return matched item. LegacyCleanup using GAWK used to remove
+#       all duplicate matches except first occurance.
 #
 # ==============================================================================
 
@@ -272,7 +277,18 @@ AS_FILE="/var/lib/AccountsService/users/$CURR_USER"
 #   Since individual desktops would need to re-work how to set user backgrounds
 #   for use by lightdm we are doing it manually here to ensure compatiblity
 #   for all desktops
-if ! [ $(grep "BackgroundFile=" $AS_FILE) ]; then
+
+# Legacy Cleanup: since was matching on "grep BackgroundFile=" a space in the
+#   filename would result in multiple arguments and give an error, then causing
+#   the lines to be re-entered in the file, giving multiple "BackgroundFile="
+#   for each time script run, leading to lots of problems.
+#
+#   These gawk command will remove all matched lines EXCEPT the first match
+gawk -i inplace '!a[$0]; /^BackgroundFile=/{a[$0]++}' "$AS_FILE"
+gawk -i inplace '!a[$0]; /^\[org\.freedesktop\.DisplayManager\.AccountsService\]/{a[$0]++}' "$AS_FILE"
+
+# "-o" essential in case filename has a space in it.
+if ! [ $(grep -o "BackgroundFile=" $AS_FILE) ]; then
     # Error, so BackgroundFile needs to be added to AS_FILE
     echo  >> $AS_FILE
     echo "[org.freedesktop.DisplayManager.AccountsService]" >> $AS_FILE
