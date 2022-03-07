@@ -583,6 +583,21 @@ cinnamon|cinnamon2d)
         mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{,.disabled}
     fi
 
+    # disable and stop tracker services
+    # TODO-2022: can we do the above dbus-1 disabled / enabled tricks for tracker?
+    if [ -x /usr/bin/tracker ] | [ -x /usr/bin/tracker3 ]; then
+        log_msg "Disabling and stopping tracker services"
+        # stop and disable tracker services
+        TRACKER_SERVICES=$(ls /lib/systemd/user/tracker* | sed -e "s@/lib/systemd/user/@@g")
+        for SERVICE in "$TRACKER_SERVICES"
+        do
+            #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user stop $SERVICE
+            sudo --user=$CURR_USER DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$CURR_UID/bus systemctl --user mask $SERVICE 2>&1 | tee -a $LOGFILE
+        done
+        # kill currently running tracker services
+        killall -r tracker-.*
+    fi
+
     # --------------------------------------------------------------------------
     # XFCE Settings
     # --------------------------------------------------------------------------
@@ -680,6 +695,20 @@ ubuntu|ubuntu-xorg|ubuntu-wayland|gnome|gnome-flashback-metacity|gnome-flashback
         mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service{.disabled,}
     fi
 
+    # enable and start tracker services
+    # TODO-2022: again check if can be done with above enable disable tricks
+    if [ -x /usr/bin/tracker ] | [ -x /usr/bin/tracker3 ]; then
+        # enable tracker services
+        log_msg "Enabling and starting tracker services"
+        TRACKER_SERVICES=$(ls /lib/systemd/user/tracker* | sed -e "s@/lib/systemd/user/@@g")
+        for SERVICE in "$TRACKER_SERVICES"
+        do
+            sudo --user=$CURR_USER DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$CURR_UID/bus systemctl --user unmask $SERVICE 2>&1 | tee -a $LOGFILE
+            #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user enable $SERVICE
+            #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user start $SERVICE
+        done
+    fi
+
     # --------------------------------------------------------------------------
     # XFCE Settings
     # --------------------------------------------------------------------------
@@ -768,6 +797,19 @@ xfce|xubuntu)
     if [[ -e /usr/share/dbus-1/services/org.gnome.ScreenSaver.service ]]; then
         log_msg "Disabling gnome-screensaver for cinnamon session"
         mv /usr/share/dbus-1/services/org.gnome.ScreenSaver.service{,.disabled}
+    fi
+
+    # disable and stop tracker services  - again check above if can be cleaner
+    if [ -x /usr/bin/tracker ] | [ -x /usr/bin/tracker3 ]; then
+        log_msg "Disabling and stopping tracker services"
+        TRACKER_SERVICES=$(ls /lib/systemd/user/tracker* | sed -e "s@/lib/systemd/user/@@g")
+        for SERVICE in "$TRACKER_SERVICES"
+        do
+            #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user stop $SERVICE
+            sudo --user=$CURR_USER DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$CURR_UID/bus systemctl --user mask $SERVICE 2>&1 | tee -a $LOGFILE
+        done
+        # kill currently running tracker services
+        killall -r tracker-.*
     fi
 
     # --------------------------------------------------------------------------
@@ -956,8 +998,13 @@ log_msg "dbus pid start: $PID_DBUS"
 log_msg "dbus pid end: $END_PID_DBUS"
 log_msg "dbus pid to kill: $REMOVE_PID_DBUS"
 
-kill -9 $REMOVE_PID_DCONF
-kill -9 $REMOVE_PID_DBUS
+if [ "$REMOVE_PID_DCONF" ]; then
+    kill -9 $REMOVE_PID_DCONF
+fi
+
+if [ "$REMOVE_PID_DBUS" ]; then
+    kill -9 $REMOVE_PID_DBUS
+fi
 
 # Ensure files correctly owned by user
 chown -R $CURR_USER:$CURR_USER /home/$CURR_USER/.cache/
