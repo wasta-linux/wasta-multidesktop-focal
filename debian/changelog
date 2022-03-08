@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (20.04.5.2) focal; urgency=medium
+
+  * correct focal disable / enable tracker services syntax
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 08 Mar 2022 16:02:42 -0600
+
 wasta-multidesktop-focal (20.04.5.1) focal; urgency=medium
 
   * update systemd triggering (inconsistent for templated unit
