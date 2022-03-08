@@ -143,10 +143,23 @@ echo
 glib-compile-schemas /usr/share/glib-2.0/schemas/ # > /dev/null 2>&1 || true;
 
 echo
-echo "enable wasta-multidesktop@.service"
+echo "*** Enabling wasta-multidesktop@.service"
 echo
-systemctl enable wasta-multidesktop@.service
+# 20.04: doesn't create /etc/systemd symlink when enabling this templated unit
+#   so for now am just manually enabling
+# systemctl enable wasta-multidesktop@.service
+mkdir -p /etc/systemd/system/user@.service.wants/
+ln -sf /lib/systemd/system/wasta-multidesktop@.service /etc/systemd/system/user@.service.wants/
 
+echo
+echo "*** Enabling 'KillUserProcesses' to ensure wasta-logout runs on logout"
+echo
+
+# lightdm does NOT close user sessions on logout, meaning wasta-logout and
+# other systemd items expecting the session to close are not running
+# correctly. Setting "KillUserProcesses=yes" in logind config works around
+# this.
+sed -i -e "s@.*\(KillUserProcesses\).*@\1=yes@" /etc/systemd/logind.conf
 
 # ------------------------------------------------------------------------------
 # Finished

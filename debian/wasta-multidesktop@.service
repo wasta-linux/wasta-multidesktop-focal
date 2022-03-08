@@ -7,10 +7,10 @@ After=graphical.target
 [Service]
 Type=simple
 RemainAfterExit=yes
-#ExecStartPre=/bin/sleep 15
+# ExecStartPre=/bin/sleep 15
 ExecStart=/usr/share/wasta-multidesktop/scripts/wasta-login.sh %i
 ExecStop=/usr/share/wasta-multidesktop/scripts/wasta-logout.sh %i
-#TimeoutStartSec=10
+# TimeoutStartSec=10
 
 [Install]
-WantedBy=user@%i.service
+WantedBy=user@.service

@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (20.04.5.1) focal; urgency=medium
+
+  * update systemd triggering (inconsistent for templated unit
+    between jammy and focal it seems?)
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 08 Mar 2022 15:07:21 -0600
+
 wasta-multidesktop-focal (20.04.5.0) focal; urgency=medium
 
   * backport from jammy except still triggered by lightdm not
