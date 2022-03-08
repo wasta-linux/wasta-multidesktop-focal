@@ -488,7 +488,7 @@ ubuntu|ubuntu-xorg|ubuntu-wayland|gnome|gnome-flashback-metacity|gnome-flashback
         TRACKER_SERVICES=$(ls /usr/share/dbus-1/services/*racker*)
         for SERVICE in "$TRACKER_SERVICES"
         do
-            sudo --user=$CURR_USER DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$CURR_UID/bus systemctl --user unmask $SERVICE 2>&1 | tee -a $LOGFILE
+            #sudo --user=$CURR_USER DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$CURR_UID/bus systemctl --user unmask $SERVICE 2>&1 | tee -a $LOGFILE
             #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user enable $SERVICE
             #sudo --user=$CURR_USER --set-home dbus-launch systemctl --user start $SERVICE
             mv $SERVICE{.disabled,}

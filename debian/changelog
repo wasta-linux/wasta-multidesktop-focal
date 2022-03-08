@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (20.04.5.3) focal; urgency=medium
+
+  * one more correction of tracker disable syntax
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 08 Mar 2022 16:05:58 -0600
+
 wasta-multidesktop-focal (20.04.5.2) focal; urgency=medium
 
   * correct focal disable / enable tracker services syntax
