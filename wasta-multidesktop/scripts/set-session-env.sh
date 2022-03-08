@@ -67,16 +67,16 @@ mkdir -p '/var/log/wasta-multidesktop'
 touch "$LOG"
 
 # Determine display manager.
-curr_dm=$(journalctl -b 0 | grep -i "New session .* of user lightdm\|New session .* of user gdm" | tail -n 1 | sed 's@^.*New session .* of user \(.*\)\.@\1@')
-if [[ $(echo $SUPPORTED_DMS | grep -w $curr_dm) ]]; then
-    CURR_DM=$curr_dm
-else
-    # Unsupported display manager!
-    log_msg "$(date)"
-    log_msg "Error: Display manager \"$curr_dm\" not supported."
-    # Exit with code 0 so that login can continue.
-    script_exit 0
-fi
+#curr_dm=$(journalctl -b 0 | grep -i "New session .* of user lightdm\|New session .* of user gdm" | tail -n 1 | sed 's@^.*New session .* of user \(.*\)\.@\1@')
+#if [[ $(echo $SUPPORTED_DMS | grep -w $curr_dm) ]]; then
+#    CURR_DM=$curr_dm
+#else
+#    # Unsupported display manager!
+#    log_msg "$(date)"
+#    log_msg "Error: Display manager \"$curr_dm\" not supported."
+#    # Exit with code 0 so that login can continue.
+#    script_exit 0
+#fi
 
 # 2022-01-17 rik: 22.04 gdm/lightdm logging reference:
 # gdm creates session with c# for gdm and # only for REAL USER, e.g.:
@@ -87,11 +87,36 @@ fi
 #   systemd-logind[666]: New session c2 of user ubu.
 CURR_USER=$(journalctl -b 0 | grep "New session .* of user " | tail -n 1 | sed 's@^.*New session .* of user \(.*\)\.@\1@')
 
-# Get current user and session name (can't depend on full env at login).
-if [[ $CURR_DM == 'gdm' ]]; then
+# 2022-03-07 rik: below taken from 22.04:
+CURR_SESSION_ID=$(loginctl show-user $CURR_USER | grep Display= | sed s/Display=//)
 
+log_msg "current session id: $CURR_SESSION_ID"
+
+# check session data
+if [[ "$CURR_SESSION_ID" ]]; then
+    CURR_SESSION=$(loginctl show-session $CURR_SESSION_ID | grep Desktop= | sed s/Desktop=//)
+    if [[ "$CURR_SESSION" ]]; then
+        # graphical login - get DM and save current session
+        CURR_DM=$(loginctl show-session $CURR_SESSION_ID | grep Service= | sed s/Service=//)
+        log_msg "Setting CURR_SESSION:$CURR_SESSION in CURR_SESSION_FILE:$CURR_SESSION_FILE"
+        echo "$CURR_SESSION" > $CURR_SESSION_FILE
+    else
+        # Not a graphical session since no Desktop entry in loginctl"
+        log_msg "EXITING: not a GUI session for user $CURR_USER"
+        exit 0
+    fi
+else
+    # Shouldn't get here: no session id, so not graphical and don't continue
+    log_msg "EXITING... no CURR_SESSION_ID"
+    exit 0
+fi
+
+
+# Get current user and session name (can't depend on full env at login).
+#if [[ $CURR_DM == 'gdm' ]]; then
+#
     # TODO: Need a different way to verify wayland session.
-    CURR_SESSION=$(journalctl -b 0 | grep "setting DESKTOP_SESSION=" | tail -n 1 | sed 's@^.*DESKTOP_SESSION=@@')
+#    CURR_SESSION=$(journalctl -b 0 | grep "setting DESKTOP_SESSION=" | tail -n 1 | sed 's@^.*DESKTOP_SESSION=@@')
     # X: ubuntu-xorg
     # Way: ubuntu-wayland??
 
@@ -108,10 +133,10 @@ if [[ $CURR_DM == 'gdm' ]]; then
     #pat="s/.*DESKTOP_SESSION=(.*)'/\1/"
     #CURR_SESSION=$(echo $session_cmd | sed -r "$pat")
 
-elif [[ $CURR_DM == 'lightdm' ]]; then
-    CURR_SESSION=$(grep -a "Greeter requests session" /var/log/lightdm/lightdm.log | \
-        tail -1 | sed 's@.*Greeter requests session \(.*\)@\1@')
-fi
+#elif [[ $CURR_DM == 'lightdm' ]]; then
+#    CURR_SESSION=$(grep -a "Greeter requests session" /var/log/lightdm/lightdm.log | \
+#        tail -1 | sed 's@.*Greeter requests session \(.*\)@\1@')
+#fi
 
 # Get the user's previous session.
 PREV_SESSION_FILE="${LOGDIR}/$CURR_USER-prev-session"

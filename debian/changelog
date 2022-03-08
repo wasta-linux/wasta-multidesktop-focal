@@ -1,3 +1,10 @@
+wasta-multidesktop-focal (20.04.5.0) focal; urgency=medium
+
+  * backport from jammy except still triggered by lightdm not
+    by systemd
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 08 Mar 2022 12:08:08 -0600
+
 wasta-multidesktop-focal (1.1.4) jammy; urgency=medium
 
   * wasta-login: disable / enable tracker services based on DE
