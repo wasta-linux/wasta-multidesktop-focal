@@ -1,3 +1,9 @@
+wasta-multidesktop-focal (20.04.5.4) focal; urgency=medium
+
+  * wasta-login: correct tracker service selection list
+
+ -- Rik Shaw <rikshaw76@gmail.com>  Tue, 08 Mar 2022 17:25:45 -0600
+
 wasta-multidesktop-focal (20.04.5.3) focal; urgency=medium
 
   * one more correction of tracker disable syntax
