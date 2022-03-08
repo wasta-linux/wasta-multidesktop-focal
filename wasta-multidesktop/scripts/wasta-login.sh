@@ -95,10 +95,8 @@
 #
 # ==============================================================================
 
-# hack: 22.04 version has UID passed by systemctl, so we need to use old logic to get user
-CURR_USER=$(journalctl -b 0 | grep "New session .* of user " | tail -n 1 | sed 's@^.*New session .* of user \(.*\)\.@\1@')
-CURR_UID=$(id -u $CURR_USER)
-
+CURR_UID=$1
+CURR_USER=$(id -un $CURR_UID)
 if [[ "$CURR_USER" == "root" ]] || [[ "$CURR_USER" == "lightdm" ]] || [[ "$CURR_USER" == "gdm" ]] || [[ "$CURR_USER" == "" ]]; then
     # do NOT process: curr user is root, lightdm, gdm, or blank
     echo "Don't process based on CURR_USER:$CURR_USER"
@@ -275,9 +273,8 @@ fi
 # USER level fixes:
 # Ensure Nautilus not showing hidden files (power users may be annoyed)
 if [ -x /usr/bin/nautilus ]; then
-    # TODO 2022: below is legacy, desktop icons in extension now
-    #gsettings_set org.gnome.desktop.background show-desktop-icons true
-    #gsettings_set com.canonical.unity.desktop.background draw-background true
+    gsettings_set org.gnome.desktop.background show-desktop-icons true
+    gsettings_set org.gnome.desktop.background draw-background true
     gsettings_set org.gnome.nautilus.preferences show-hidden-files false
 fi
 

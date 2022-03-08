@@ -10,10 +10,8 @@
 #
 # ==============================================================================
 
-# hack: 22.04 version has UID passed by systemctl, so we need to use old logic to get user
-CURR_USER=$(journalctl -b 0 | grep "New session .* of user " | tail -n 1 | sed 's@^.*New session .* of user \(.*\)\.@\1@')
-CURR_UID=$(id -u $CURR_USER)
-
+CURR_UID=$1
+CURR_USER=$(id -un $CURR_UID)
 if [[ "$CURR_USER" == "root" ]] || [[ "$CURR_USER" == "lightdm" ]] || [[ "$CURR_USER" == "gdm" ]] || [[ "$CURR_USER" == "" ]]; then
     # do NOT process: curr user is root, lightdm, gdm, or blank
     echo "Don't process based on CURR_USER:$CURR_USER"
